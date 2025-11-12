@@ -2,10 +2,40 @@
 
 Aplicación Android para la gestión de usuarios, materias, horarios, inscripciones y asistencias académicas. Está construida con Jetpack Compose y emplea una base de datos SQLite local para persistencia.
 
+## Resumen de Cambios Recientes
+
+### 🎨 Mejoras de Interfaz y Diseño
+- ✅ **Refactorización completa con Atomic Design:** Todas las pantallas organizadas en Atoms, Molecules y Organisms
+- ✅ **Material Design 3:** Diseño moderno aplicado en toda la aplicación
+- ✅ **Componentes comunes:** `UserLayout` y `HomeLayout` para consistencia visual
+- ✅ **Iconografía Material:** Uso consistente de Material Icons en toda la aplicación
+- ✅ **Scroll vertical:** Todas las pantallas tienen scroll para contenido extenso
+- ✅ **Estados vacíos:** Cards informativas con iconos y mensajes descriptivos
+- ✅ **Tema personalizado:** Paleta de colores académica azul (Material You deshabilitado)
+
+### 👨‍🏫 Funcionalidades del Docente
+- ✅ **Dashboard del docente:** Pantalla principal con navegación a grupos y asistencias
+- ✅ **Ver grupos asignados:** Lista de grupos asignados al docente con información detallada
+- ✅ **Ver estudiantes por grupo:** Lista de estudiantes inscritos en un grupo específico
+- ✅ **Marcar asistencia:** Funcionalidad completa para marcar asistencia de estudiantes
+
+### 🏗️ Mejoras Arquitectónicas
+- ✅ **Nuevos métodos en DAOs:** `obtenerPorDocente`, `obtenerEstudiantesPorGrupo`, `obtenerPorGrupo`, `obtenerPorAlumnoYGrupo`
+- ✅ **Nuevos métodos en Repositories:** Métodos correspondientes para funcionalidades del docente
+- ✅ **Navegación refactorizada:** `AppNavHost` movido a componente común con Atomic Design
+- ✅ **Logout mejorado:** Limpia completamente el back stack usando `popUpTo` con `inclusive = true`
+
+### 📱 Pantallas Refactorizadas
+- ✅ **LoginScreen:** Rediseñado completamente con Atomic Design y Material Design 3
+- ✅ **Pantallas de Admin:** Todas refactorizadas con Cards estructuradas, formularios mejorados, estados vacíos
+- ✅ **Pantallas de Alumno:** Mejoradas con listas estructuradas, Cards informativas, mejor organización
+- ✅ **Pantallas de Docente:** Diseñadas desde cero con Material Design 3 y Atomic Design
+
 ## Tecnologías utilizadas
 - **Lenguaje:** Kotlin (JVM 17).
-- **UI:** Jetpack Compose, Material 3, Navigation Compose.
+- **UI:** Jetpack Compose, Material Design 3, Navigation Compose.
 - **Arquitectura de componentes:** ViewModel, StateFlow, corutinas.
+- **Diseño:** Atomic Design (Atoms, Molecules, Organisms), Material Design 3.
 - **Persistencia local:** SQLite mediante `SQLiteOpenHelper`.
 - **Networking preparado:** Retrofit 2, OkHttp Logging Interceptor (configurados, aún sin endpoints implementados).
 - **Gestión de dependencias:** Gradle con catálogo de versiones (`libs.versions.toml`).
@@ -350,19 +380,26 @@ app/src/main/java/com/bo/asistenciaapp/
 │       └── ValidationResult.kt      # Resultado de validaciones
 └── presentation/                      # CAPA DE PRESENTACIÓN
     ├── login/
-    │   └── LoginScreen.kt
+    │   └── LoginScreen.kt            # Pantalla de login con Atomic Design
     ├── admin/
-    │   ├── AdminHome.kt
+    │   ├── AdminHome.kt              # Dashboard administrador con Material Design 3
     │   ├── PUsuario.kt              # Gestión Usuarios
     │   ├── PMateria.kt              # Gestión Materias
     │   ├── PGrupo.kt                # Gestión Grupos
-    │   ├── PHorario.kt              # Gestión Horarios
-    │   └── navigation/
-    │       └── AppNavHost.kt        # Navegación principal
-    └── alumno/
-        ├── AlumnoHomeScreen.kt
-        ├── GestionarInscripciones.kt
-        └── GestionarAsistenca.kt
+    │   └── PHorario.kt              # Gestión Horarios
+    ├── alumno/
+    │   ├── AlumnoHomeScreen.kt       # Dashboard alumno con Material Design 3
+    │   ├── GestionarInscripciones.kt # Gestión de inscripciones
+    │   └── GestionarAsistenca.kt    # Gestión de asistencias
+    ├── docente/
+    │   ├── DocenteHomeScreen.kt      # Dashboard docente con Material Design 3
+    │   ├── VerGruposDocenteScreen.kt # Ver grupos asignados
+    │   ├── VerEstudiantesGrupoScreen.kt # Ver estudiantes por grupo
+    │   └── MarcarAsistenciaDocenteScreen.kt # Marcar asistencia de estudiantes
+    └── common/
+        ├── navigation/
+        │   └── AppNavHost.kt        # Navegación principal (refactorizado)
+        └── UserLayout.kt            # Layout común para pantallas de usuario
 ```
 
 ### Capa de Datos (`data/`)
@@ -425,24 +462,26 @@ UseCases
 - Cada DAO maneja una tabla específica:
   - **`UsuarioDao`**: validarUsuario(), obtenerTodos(), obtenerDocentes(), insertar(), eliminar(), actualizar()
   - **`MateriaDao`**: obtenerTodas(), insertar(), eliminar()
-  - **`GrupoDao`**: obtenerTodos(), insertar(), eliminar()
+  - **`GrupoDao`**: obtenerTodos(), insertar(), eliminar(), **obtenerPorDocente(docenteId)** - Nuevo método para docente
   - **`HorarioDao`**: obtenerTodos(), insertar(), eliminar()
-  - **`InscripcionDao`**: obtenerPorAlumno(), insertar(), tieneCruceDeHorario()
-  - **`AsistenciaDao`**: obtenerPorAlumno(), insertar(), puedeMarcarAsistencia()
+  - **`InscripcionDao`**: obtenerPorAlumno(), insertar(), tieneCruceDeHorario(), **obtenerEstudiantesPorGrupo(grupoId)** - Nuevo método para docente
+  - **`AsistenciaDao`**: obtenerPorAlumno(), insertar(), puedeMarcarAsistencia(), **obtenerPorGrupo(grupoId)**, **obtenerPorAlumnoYGrupo(alumnoId, grupoId)** - Nuevos métodos para docente
 - Acceso directo a SQLite (raw queries)
 - Solo usado por Repositories
+- **Nuevos métodos agregados:** Métodos específicos para funcionalidades del docente (ver grupos asignados, estudiantes por grupo, asistencias por grupo)
 
 #### Repositories (`data/repository/`)
 - **Responsabilidad:** Abstraer el acceso a datos
 - Cada Repository usa su DAO correspondiente:
   - **`UsuarioRepository`**: Usa `UsuarioDao`
   - **`MateriaRepository`**: Usa `MateriaDao`
-  - **`GrupoRepository`**: Usa `GrupoDao`
+  - **`GrupoRepository`**: Usa `GrupoDao`, **obtenerPorDocente(docenteId)** - Nuevo método
   - **`HorarioRepository`**: Usa `HorarioDao`
-  - **`InscripcionRepository`**: Usa `InscripcionDao`
-  - **`AsistenciaRepository`**: Usa `AsistenciaDao`
+  - **`InscripcionRepository`**: Usa `InscripcionDao`, **obtenerEstudiantesPorGrupo(grupoId)** - Nuevo método
+  - **`AsistenciaRepository`**: Usa `AsistenciaDao`, **obtenerPorGrupo(grupoId)**, **obtenerPorAlumnoYGrupo(alumnoId, grupoId)** - Nuevos métodos
 - Permiten cambiar la fuente de datos sin afectar casos de uso
 - Facilita pruebas unitarias mediante mocking
+- **Nuevos métodos agregados:** Métodos específicos para funcionalidades del docente que delegan a los DAOs correspondientes
 
 #### `UserSession.kt` (SharedPreferences)
 - Maneja la sesión del usuario logueado
@@ -561,14 +600,65 @@ viewModel.agregarUsuario(nombres, apellidos, ...)
 
 **Responsabilidad:** Interfaz de usuario con Jetpack Compose.
 
-#### Navegación (`presentation/admin/navigation/AppNavHost.kt`)
+#### Diseño de Interfaz - Atomic Design y Material Design 3
+
+La aplicación implementa **Atomic Design** como metodología de diseño de componentes y **Material Design 3** como sistema de diseño visual.
+
+**Atomic Design aplicado:**
+- **Atoms (Átomos):** Elementos básicos e indivisibles
+  - Iconos Material (`Icons.Default.*`, `Icons.AutoMirrored.Filled.*`)
+  - Textos (`Text`, `TextButton`)
+  - Campos de entrada (`OutlinedTextField`)
+  - Botones (`Button`, `OutlinedButton`)
+  
+- **Molecules (Moléculas):** Componentes compuestos que combinan átomos
+  - Cards de acción (`AdminActionCard`, `MateriaCard`, `UsuarioCard`)
+  - Formularios (`MateriaFormSection`, `UsuarioFormSection`)
+  - Headers (`AdminHomeHeader`, `LoginHeader`)
+  - Botones con iconos (`AdminLogoutButton`, `LoginButton`)
+  
+- **Organisms (Organismos):** Componentes complejos que combinan múltiples moléculas
+  - Layouts completos (`UserLayout`, `HomeLayout`)
+  - Secciones de pantalla (`AdminHomeMenu`, `MateriaListSection`)
+  - Navegación (`LoginRoutes`, `AdminRoutes`, `DocenteRoutes`, `AlumnoRoutes`)
+
+**Componentes comunes:**
+- **`UserLayout`:** Layout común para pantallas con TopAppBar
+  - Proporciona estructura consistente con título y navegación
+  - Manejo del tema Material Design 3
+  - Botón de retroceso y logout opcionales
+  - Refactorizado con Atomic Design (`UserTopAppBar`, `UserLayoutContent`, `UserTopAppBarTitle`, `UserBackButton`, `UserLogoutButton`)
+  
+- **`HomeLayout`:** Layout simplificado para pantallas home sin TopAppBar
+  - Útil para pantallas principales donde el título está integrado en el contenido
+  - Más espacio para el contenido principal
+
+**Material Design 3:**
+- **Tema personalizado:** Paleta de colores académica azul (deshabilitado Material You dinámico)
+- **Iconografía consistente:** Uso de Material Icons en toda la aplicación
+- **Componentes modernos:** Cards, Surfaces, Elevated Cards con esquinas redondeadas
+- **Estados visuales:** Loading states, error states, empty states informativos
+- **Scroll vertical:** Todas las pantallas tienen scroll para contenido extenso
+- **Snackbars:** Feedback visual para acciones del usuario
+
+**Mejoras de diseño aplicadas:**
+- **LoginScreen:** Rediseñado completamente con Material Design 3, animaciones y componentes Atomic Design
+- **Pantallas de Admin:** Refactorizadas con Cards estructuradas, iconos Material, formularios mejorados
+- **Pantallas de Alumno:** Mejoradas con listas estructuradas, Cards informativas, estados vacíos
+- **Pantallas de Docente:** Diseñadas desde cero con Material Design 3 y Atomic Design
+- **Navegación:** Refactorizada con Atomic Design y mejor manejo de estados
+
+#### Navegación (`presentation/common/navigation/AppNavHost.kt`)
+- **Refactorizado:** Movido a `presentation/common/navigation/` para uso compartido
 - Usa Navigation Compose para gestionar el flujo de pantallas
+- **Arquitectura:** Refactorizado con Atomic Design (Organisms, Molecules, Atoms)
 - Rutas principales:
   - `login`: Pantalla de inicio de sesión
   - `adminHome`: Dashboard del administrador
   - `alumnoHome`: Dashboard del alumno
-  - `docenteHome`: Dashboard del docente (preparado, sin implementar)
+  - `docenteHome`: Dashboard del docente - **Implementado**
 - Redirección automática según rol guardado en `UserSession`
+- **Logout mejorado:** Limpia completamente el back stack usando `popUpTo` con `inclusive = true`
 - Pantallas de administración:
   - `gestionUsuarios`: CRUD de usuarios
   - `gestionMaterias`: CRUD de materias
@@ -578,6 +668,10 @@ viewModel.agregarUsuario(nombres, apellidos, ...)
 - Pantallas de alumno:
   - `gestionarInscripciones`: Ver y gestionar sus inscripciones
   - `gestionarAsistencias`: Ver y gestionar sus asistencias
+- Pantallas de docente:
+  - `verGruposDocente`: Ver grupos asignados al docente
+  - `verEstudiantesGrupo`: Ver estudiantes de un grupo específico
+  - `marcarAsistenciaDocente`: Marcar asistencia de estudiantes
 
 #### Pantallas principales
 
@@ -588,51 +682,95 @@ Todas las pantallas siguen el mismo patrón arquitectónico: **UI → ViewModel 
    - **UseCase:** `UsuarioCU.validarUsuario()`
    - **Flujo:** Valida credenciales → Guarda sesión en `UserSession` → Redirige según rol
    - **UI State:** Maneja estados de carga y errores con Material Design 3
+   - **Diseño:** Refactorizado con Atomic Design (componentes: `LoginFormCard`, `LoginLogo`, `LoginHeader`, `LoginUsernameField`, `LoginPasswordField`, `LoginButton`, `LoginErrorCard`)
+   - **Características:** Diseño moderno con iconografía Material, animaciones, feedback visual
 
 2. **`AdminHomeScreen.kt`**
    - Dashboard principal del administrador
+   - **Layout:** Usa `HomeLayout` para consistencia
+   - **Diseño:** Refactorizado con Atomic Design y Material Design 3
+   - **Características:** Cards interactivos con iconos Material, descripciones, navegación visual
    - Navegación a todas las pantallas de gestión
-   - Opción de logout
+   - Opción de logout con estilo de error
 
 3. **`GestionarUsuariosScreen.kt`** (PUsuario.kt)
    - **ViewModel:** `VMUsuario`
    - **UseCase:** `UsuarioCU` (agregar, eliminar, actualizar)
+   - **Layout:** Usa `UserLayout` para consistencia
    - **Características:** CRUD completo con validaciones, estados de carga, manejo de errores
-   - **UI:** Lista reactiva, formularios con validación, diálogos de edición
+   - **UI:** Cards estructuradas con iconos según rol, formulario mejorado con iconos Material, diálogo de edición mejorado, campo de contraseña con toggle de visibilidad, estados vacíos informativos
+   - **Scroll:** Scroll vertical para contenido extenso
 
 4. **`GestionarMateriasScreen.kt`** (PMateria.kt)
    - **ViewModel:** `VMMateria`
    - **UseCase:** `MateriaCU` (agregar, eliminar)
+   - **Layout:** Usa `UserLayout` para consistencia
    - **Validaciones:** Siglas únicas, niveles válidos
-   - **UI:** Lista con acciones de eliminación, formulario con validación
+   - **UI:** Cards estructuradas con iconos Material, formulario en Card con iconos, estados vacíos informativos, scroll vertical
 
 5. **`GestionarGruposScreen.kt`** (PGrupo.kt)
    - **ViewModel:** `VMGrupo` (incluye materias y docentes)
    - **UseCase:** `GrupoCU` (agregar, eliminar)
-   - **Características:** Dropdowns para selección de materia y docente
+   - **Layout:** Usa `UserLayout` para consistencia
+   - **Características:** Dropdowns mejorados con iconos Material, formulario estructurado
    - **Validaciones:** Capacidad, semestre, gestión
+   - **UI:** Cards informativas con detalles del grupo, estados vacíos, scroll vertical
 
 6. **`GestionarHorarios.kt`** (PHorario.kt)
    - **ViewModel:** `VMHorario` (incluye grupos)
    - **UseCase:** `HorarioCU` (agregar, eliminar)
+   - **Layout:** Usa `UserLayout` para consistencia
    - **Validaciones:** Formato de hora (HH:mm), rango válido
-   - **UI:** Selector de grupo y día, campos de hora
+   - **UI:** Cards con badges de día, selector de grupo y día mejorados, campos de hora lado a lado, estados vacíos, scroll vertical
 
 7. **`AlumnoHomeScreen.kt`**
    - Dashboard principal del alumno
+   - **Layout:** Usa `HomeLayout` para consistencia
+   - **Diseño:** Refactorizado con Atomic Design y Material Design 3
+   - **Características:** Cards interactivos con iconos Material, descripciones, navegación visual
    - Acceso a sus inscripciones y asistencias
+   - Opción de logout con estilo de error
 
 8. **`GestionarInscripciones.kt`**
    - **ViewModel:** `VMInscripcion` (incluye grupos disponibles y boletas del alumno)
    - **UseCase:** `InscripcionCU` (agregar con validación de cruces)
+   - **Layout:** Usa `UserLayout` para consistencia
    - **Validaciones:** Cruce de horarios, capacidad del grupo
-   - **UI:** Lista de grupos disponibles, botón de inscripción, lista de inscripciones actuales
+   - **UI:** Cards estructuradas con información del grupo y docente, secciones separadas ("Grupos Disponibles" y "Mi Boleta"), Cards de inscripción con horarios y días, estados vacíos informativos, scroll vertical
 
 9. **`GestionarAsistenca.kt`**
    - **ViewModel:** `VMAsistencia` (incluye grupos inscritos y asistencias)
    - **UseCase:** `AsistenciaCU` (marcar con validación de horarios)
+   - **Layout:** Usa `UserLayout` para consistencia
    - **Validaciones:** Horario correcto, alumno inscrito
-   - **UI:** Lista de grupos para marcar asistencia, historial de asistencias
+   - **UI:** Cards estructuradas con información organizada, secciones separadas ("Grupos Disponibles" y "Mi Historial"), Cards con botones de acción, estados vacíos informativos, scroll vertical
+
+10. **`DocenteHomeScreen.kt`** - **NUEVO**
+    - Dashboard principal del docente
+    - **Layout:** Usa `HomeLayout` para consistencia
+    - **Diseño:** Diseñado con Atomic Design y Material Design 3
+    - **Características:** Cards interactivos con iconos Material, descripciones, navegación visual
+    - Acceso a grupos asignados y marcar asistencias
+    - Opción de logout con estilo de error
+
+11. **`VerGruposDocenteScreen.kt`** - **NUEVO**
+    - **ViewModel:** `VMGrupo` (usa `obtenerPorDocente`)
+    - **UseCase:** `GrupoCU` (obtener grupos por docente)
+    - **Layout:** Usa `UserLayout` para consistencia
+    - **UI:** Cards estructuradas con información del grupo, iconos Material, navegación visual a estudiantes, estados vacíos informativos, scroll vertical
+
+12. **`VerEstudiantesGrupoScreen.kt`** - **NUEVO**
+    - **ViewModel:** `VMInscripcion` (usa `obtenerEstudiantesPorGrupo`)
+    - **UseCase:** `InscripcionCU` (obtener estudiantes por grupo)
+    - **Layout:** Usa `UserLayout` para consistencia
+    - **UI:** Cards de estudiantes con iconos Material, información organizada, navegación a marcar asistencia, estados vacíos informativos, scroll vertical
+
+13. **`MarcarAsistenciaDocenteScreen.kt`** - **NUEVO**
+    - **ViewModel:** `VMAsistencia` (usa `obtenerPorGrupo`, `obtenerPorAlumnoYGrupo`)
+    - **UseCase:** `AsistenciaCU` (marcar asistencia)
+    - **Layout:** Usa `Scaffold` directamente para SnackbarHost
+    - **Características:** Selector de grupo con Cards interactivas y RadioButtons, lista de estudiantes con Cards estructuradas, botones de acción para marcar asistencia, estados vacíos para diferentes escenarios, feedback con Snackbars
+    - **UI:** Diseño moderno con Atomic Design, scroll vertical
 
 ### Flujo de datos detallado
 
@@ -835,7 +973,7 @@ Todas las pantallas siguen el mismo patrón arquitectónico: **UI → ViewModel 
    - `AppNavHost` lee `UserSession.getUserRol()`
    - **Admin** → `AdminHome` → Acceso a todas las pantallas de gestión
    - **Alumno** → `AlumnoHome` → Acceso a inscripciones y asistencias
-   - **Docente** → `DocenteHome` → (Pendiente de implementar)
+   - **Docente** → `DocenteHome` → Acceso a grupos asignados y marcar asistencias
 
 ### Flujo de gestión de datos (CRUD)
 
@@ -1027,10 +1165,42 @@ Incluye materias de diferentes niveles académicos:
 
 **Nota:** Para resetear los datos de prueba en desarrollo, se puede usar el método `DatabaseSeeder.clearSeedData()`.
 
+## Tema y Diseño Visual
+
+### Paleta de Colores
+La aplicación utiliza una **paleta de colores académica azul** consistente en toda la aplicación:
+- **Color primario:** Azul académico (`PrimaryBlue`)
+- **Color secundario:** Azul más claro (`SecondaryBlue`)
+- **Material You deshabilitado:** `dynamicColor = false` en `AsistenciaAppTheme` para mantener consistencia visual
+- **Colores del tema:** Definidos en `ui/theme/Color.kt` y aplicados consistentemente
+
+### Componentes de Diseño
+
+**Cards y Surfaces:**
+- Cards con esquinas redondeadas (`RoundedCornerShape(12.dp)` o `16.dp`)
+- Elevación sutil para profundidad visual
+- Colores de contenedor según contexto (`surfaceVariant`, `primaryContainer`, `errorContainer`)
+
+**Iconografía:**
+- Material Icons consistente en toda la aplicación
+- Iconos contextuales según el contenido (People para usuarios, Book para materias, School para grupos, etc.)
+- Uso de iconos AutoMirrored donde corresponde (`Icons.AutoMirrored.Filled.*`)
+
+**Estados Visuales:**
+- **Loading:** `CircularProgressIndicator` en botones durante operaciones
+- **Error:** Cards y mensajes con color de error (`error`, `errorContainer`)
+- **Empty States:** Cards informativas con iconos grandes y mensajes descriptivos
+- **Success:** Snackbars con mensajes de confirmación
+
+**Scroll y Navegación:**
+- Scroll vertical en todas las pantallas para contenido extenso
+- Navegación fluida con transiciones suaves
+- Back stack gestionado correctamente en logout
+
 ## Evaluación frente al diagrama genérico de 3 capas
-- **Presentación:** Composables desacoplados que consumen ViewModels; la navegación por roles está bien encapsulada. Los ViewModels reciben dependencias de forma manual (oportunidad de mejora con inyección de dependencias).
-- **Dominio:** Casos de uso encapsulan reglas de negocio y usan Repositories para acceder a datos, manteniendo separación de responsabilidades. ViewModels gestionan estado reactivo con `StateFlow`.
-- **Datos:** Arquitectura completa con Singleton, DAOs separados por entidad, Repositories que abstraen el acceso, y separación clara entre migraciones, seeders y acceso a datos. Falta implementar manejo de errores robusto y migración a Room para mejor seguridad de threads.
+- **Presentación:** Composables desacoplados que consumen ViewModels; la navegación por roles está bien encapsulada. Implementación completa de Atomic Design y Material Design 3. Componentes comunes (`UserLayout`, `HomeLayout`) para consistencia. Los ViewModels reciben dependencias de forma manual (oportunidad de mejora con inyección de dependencias).
+- **Dominio:** Casos de uso encapsulan reglas de negocio y usan Repositories para acceder a datos, manteniendo separación de responsabilidades. ViewModels gestionan estado reactivo con `StateFlow`. Nuevos métodos agregados para funcionalidades del docente.
+- **Datos:** Arquitectura completa con Singleton, DAOs separados por entidad, Repositories que abstraen el acceso, y separación clara entre migraciones, seeders y acceso a datos. Nuevos métodos en DAOs y Repositories para funcionalidades del docente. Falta implementar manejo de errores robusto y migración a Room para mejor seguridad de threads.
 
 ## Oportunidades de mejora
 
@@ -1044,6 +1214,35 @@ Incluye materias de diferentes niveles académicos:
 - ✅ Implementar UI State Management en todos los ViewModels (sealed classes para estados)
 - ✅ Agregar validaciones en UseCases con `ValidationResult`
 - ✅ Crear `Validators` utility para validaciones reutilizables
+- ✅ **Implementar vista del docente con funcionalidades específicas**
+  - Dashboard del docente con navegación a grupos y asistencias
+  - Ver grupos asignados al docente
+  - Ver estudiantes por grupo
+  - Marcar asistencia de estudiantes
+- ✅ **Mejorar diseños de pantallas con Material Design 3**
+  - Refactorización completa de LoginScreen con Atomic Design
+  - Refactorización de todas las pantallas de admin con Material Design 3
+  - Refactorización de todas las pantallas de alumno con Material Design 3
+  - Diseño completo de pantallas de docente con Material Design 3
+  - Componentes comunes (`UserLayout`, `HomeLayout`) para consistencia
+- ✅ **Aplicar Atomic Design en toda la aplicación**
+  - Componentes organizados en Atoms, Molecules y Organisms
+  - Refactorización de `AppNavHost` con Atomic Design
+  - Componentes reutilizables y bien documentados
+- ✅ **Agregar funcionalidades de datos para docente**
+  - Nuevos métodos en DAOs: `obtenerPorDocente`, `obtenerEstudiantesPorGrupo`, `obtenerPorGrupo`, `obtenerPorAlumnoYGrupo`
+  - Nuevos métodos en Repositories correspondientes
+- ✅ **Mejorar navegación y logout**
+  - Refactorización de `AppNavHost` a componente común
+  - Logout mejorado que limpia completamente el back stack
+  - Navegación consistente entre roles
+- ✅ **Agregar scroll vertical**
+  - Todas las pantallas tienen scroll para contenido extenso
+  - Mejor experiencia de usuario en pantallas con mucho contenido
+- ✅ **Mejorar iconografía**
+  - Uso consistente de Material Icons en toda la aplicación
+  - Iconos AutoMirrored donde corresponde
+  - Iconos contextuales según el contenido
 
 ### Pendiente
 - Introducir inyección de dependencias (Hilt) para eliminar dependencias manuales en ViewModels y UseCases
@@ -1051,8 +1250,9 @@ Incluye materias de diferentes niveles académicos:
 - Aplicar encriptado/Hash a contraseñas y separar datos sensibles de la app cliente
 - Completar la capa remota mediante Retrofit, sincronizando datos locales/remotos y habilitando pruebas unitarias con fuentes simuladas
 - Añadir pruebas instrumentadas de navegación y validación de flujos críticos (login, inscripción, asistencia)
-- Implementar vista del docente con funcionalidades específicas
-- Mejorar diseños de pantallas con Material Design 3 más completo
+- Agregar validaciones adicionales (evitar marcar asistencia duplicada)
+- Agregar estadísticas de asistencia por grupo
+- Mejorar la UX con animaciones y transiciones más fluidas
 - Agregar manejo de errores más robusto con retry y logging
 
 
