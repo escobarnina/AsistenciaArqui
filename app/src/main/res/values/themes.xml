@@ -1,5 +1,38 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-
-    <style name="Theme.AsistenciaApp" parent="android:Theme.Material.Light.NoActionBar" />
+    <!--
+        Tema base para la aplicación AsistenciaApp.
+        
+        Este tema se aplica a la Activity principal y define aspectos del sistema
+        como la barra de estado, etc.
+        
+        NOTA: La aplicación usa Jetpack Compose para la UI, por lo que la mayoría
+        del tema se define en Theme.kt. Este archivo XML solo configura aspectos
+        del sistema Android.
+        
+        Usamos Theme.AppCompat.Light.NoActionBar como base porque es compatible
+        y funciona bien con Compose. Los colores y estilos principales se manejan
+        en Theme.kt (Compose).
+    -->
+    
+    <!-- Tema principal de la aplicación -->
+    <style name="Theme.AsistenciaApp" parent="Theme.AppCompat.Light.NoActionBar">
+        <!-- Color primario para la barra de estado y sistema -->
+        <item name="android:statusBarColor">@color/primary</item>
+        <item name="android:navigationBarColor">@color/background_light</item>
+        
+        <!-- Color de la barra de estado (claro para mejor contraste) -->
+        <item name="android:windowLightStatusBar">true</item>
+        
+        <!-- Color de la barra de navegación -->
+        <item name="android:windowLightNavigationBar">true</item>
+        
+        <!-- Permitir que el contenido se dibuje detrás de las barras del sistema -->
+        <item name="android:windowDrawsSystemBarBackgrounds">true</item>
+        
+        <!-- Color primario para componentes Views tradicionales (si se usan) -->
+        <item name="colorPrimary">@color/primary</item>
+        <item name="colorPrimaryDark">@color/blue_40</item>
+        <item name="colorAccent">@color/green_40</item>
+    </style>
 </resources>

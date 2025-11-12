@@ -16,24 +16,52 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import com.bo.asistenciaapp.data.local.AppDatabase
+import com.bo.asistenciaapp.data.repository.UsuarioRepository
 import androidx.compose.runtime.*
 import com.bo.asistenciaapp.domain.model.Usuario
+import com.bo.asistenciaapp.domain.usecase.UsuarioCU
+import com.bo.asistenciaapp.domain.viewmodel.UsuarioUiState
+import com.bo.asistenciaapp.domain.viewmodel.VMUsuario
 import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun GestionarUsuariosScreen(onBack: () -> Unit) {
     val context = LocalContext.current
-    val db = remember { AppDatabase(context) }
-//    val dominioUsuario = remember { DUsuario(db) }
-
-    // Estado de la lista
-    var usuarios by remember { mutableStateOf(db.obtenerUsuarios()) }
+    
+    // Inicializar dependencias
+    val database = remember { AppDatabase.getInstance(context) }
+    val usuarioRepository = remember { UsuarioRepository(database) }
+    val usuarioCU = remember { UsuarioCU(usuarioRepository) }
+    
+    // ViewModel
+    val viewModel: VMUsuario = viewModel {
+        VMUsuario(usuarioCU)
+    }
+    
+    val usuarios by viewModel.usuarios.collectAsState()
+    val uiState by viewModel.uiState.collectAsState()
 
     // snackbar
     val snackbarHostState = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
+    
+    // Manejar estados del ViewModel
+    LaunchedEffect(uiState) {
+        when (val state = uiState) {
+            is UsuarioUiState.Success -> {
+                if (state.mensaje != null) {
+                    scope.launch { snackbarHostState.showSnackbar(state.mensaje) }
+                }
+            }
+            is UsuarioUiState.Error -> {
+                scope.launch { snackbarHostState.showSnackbar(state.mensaje) }
+            }
+            else -> {}
+        }
+    }
 
     // Roles
     var roles = listOf<String>("Alumno", "Docente", "Admin")
@@ -125,30 +153,21 @@ fun GestionarUsuariosScreen(onBack: () -> Unit) {
 
             Button(
                 onClick = {
-                    try {
-                        if (nombres.isNotBlank() && apellidos.isNotBlank() && rol.isNotBlank() && registro.isNotBlank() && username.isNotBlank() && contrasena.isNotBlank()) {
-                            db.agregarUsuario(
-                                nombres,
-                                apellidos,
-                                registro,
-                                rol,
-                                username,
-                                contrasena
-                            )
-                            usuarios = db.obtenerUsuarios()
-                            nombres = ""; apellidos = ""; rol = "rol"; registro = ""; username =
-                                ""; contrasena = ""
-                            scope.launch { snackbarHostState.showSnackbar("Usuario registrado correctamente") }
-                        } else {
-                            scope.launch { snackbarHostState.showSnackbar("Completa todos los campos") }
-                        }
-                    } catch (e: Exception) {
-                        scope.launch { snackbarHostState.showSnackbar("Error: ${e.message}") }
+                    if (nombres.isNotBlank() && apellidos.isNotBlank() && rol.isNotBlank() && registro.isNotBlank() && username.isNotBlank() && contrasena.isNotBlank()) {
+                        viewModel.agregarUsuario(nombres, apellidos, registro, rol, username, contrasena)
+                        nombres = ""; apellidos = ""; rol = ""; registro = ""; username = ""; contrasena = ""
+                    } else {
+                        scope.launch { snackbarHostState.showSnackbar("Completa todos los campos") }
                     }
                 },
+                enabled = uiState !is UsuarioUiState.Loading,
                 modifier = Modifier.fillMaxWidth()
             ) {
-                Text("Agregar usuario")
+                if (uiState is UsuarioUiState.Loading) {
+                    CircularProgressIndicator(modifier = Modifier.size(16.dp))
+                } else {
+                    Text("Agregar usuario")
+                }
             }
             OutlinedButton(onClick = onBack, modifier = Modifier.fillMaxWidth()) {
                 Text("Volver")
@@ -174,15 +193,10 @@ fun GestionarUsuariosScreen(onBack: () -> Unit) {
                         Text("${u.nombres} ${u.apellidos} (${u.registro})")
                         Spacer(Modifier.height(8.dp))
                         Text("${u.username} - ${u.rol}")
-                        IconButton(onClick = {
-                            try {
-                                db.eliminarUsuario(u.id)
-                                usuarios = db.obtenerUsuarios()
-                                scope.launch { snackbarHostState.showSnackbar("Usuario eliminado") }
-                            } catch (e: Exception) {
-                                scope.launch { snackbarHostState.showSnackbar("Error: ${e.message}") }
-                            }
-                        }) {
+                        IconButton(
+                            onClick = { viewModel.eliminarUsuario(u.id) },
+                            enabled = uiState !is UsuarioUiState.Loading
+                        ) {
                             Icon(Icons.Default.Delete, "Eliminar")
                         }
                     }
@@ -248,20 +262,10 @@ fun GestionarUsuariosScreen(onBack: () -> Unit) {
                 ) {
                     TextButton(
                         onClick = {
-                            try {
-                                db.actualizarUsuario(
-                                    editUsuario!!.id,
-                                    editNombres,
-                                    editApellidos,
-                                    editRol
-                                )
-                                editUsuario = null
-                                usuarios = db.obtenerUsuarios()
-                                scope.launch { snackbarHostState.showSnackbar("Usuario actualizado") }
-                            } catch (e: Exception) {
-                                scope.launch { snackbarHostState.showSnackbar("Error: ${e.message}") }
-                            }
-                        }
+                            viewModel.actualizarUsuario(editUsuario!!.id, editNombres, editApellidos, editRol)
+                            editUsuario = null
+                        },
+                        enabled = uiState !is UsuarioUiState.Loading
                     ) {
                         Text("Confirmar")
                     }

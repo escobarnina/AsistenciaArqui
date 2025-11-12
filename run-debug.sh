@@ -5,16 +5,64 @@
 
 set -e
 
-# Obtener ruta del SDK desde local.properties
-SDK_DIR=$(grep "sdk.dir" local.properties | cut -d'=' -f2)
-ADB="$SDK_DIR/platform-tools/adb"
+# Función para encontrar adb
+find_adb() {
+    # 1. Intentar desde local.properties
+    if [ -f "local.properties" ]; then
+        SDK_DIR=$(grep "sdk.dir" local.properties 2>/dev/null | cut -d'=' -f2 | tr -d ' ')
+        if [ -n "$SDK_DIR" ] && [ -f "$SDK_DIR/platform-tools/adb" ]; then
+            echo "$SDK_DIR/platform-tools/adb"
+            return 0
+        fi
+    fi
+    
+    # 2. Intentar desde variable de entorno ANDROID_HOME
+    if [ -n "$ANDROID_HOME" ] && [ -f "$ANDROID_HOME/platform-tools/adb" ]; then
+        echo "$ANDROID_HOME/platform-tools/adb"
+        return 0
+    fi
+    
+    # 3. Buscar en ubicaciones comunes de macOS
+    COMMON_PATHS=(
+        "$HOME/Library/Android/sdk/platform-tools/adb"
+        "$HOME/Android/Sdk/platform-tools/adb"
+    )
+    
+    for path in "${COMMON_PATHS[@]}"; do
+        if [ -f "$path" ]; then
+            echo "$path"
+            return 0
+        fi
+    done
+    
+    # 4. Buscar con find (más lento pero más completo)
+    FOUND=$(find "$HOME/Library/Android" "$HOME/Android" -name "adb" -type f 2>/dev/null | head -1)
+    if [ -n "$FOUND" ]; then
+        echo "$FOUND"
+        return 0
+    fi
+    
+    return 1
+}
 
-# Verificar que adb existe
-if [ ! -f "$ADB" ]; then
-    echo "❌ Error: No se encontró adb en $ADB"
-    echo "   Verifica que local.properties tenga la ruta correcta del SDK"
+# Encontrar adb
+ADB=$(find_adb)
+
+if [ -z "$ADB" ] || [ ! -f "$ADB" ]; then
+    echo "❌ Error: No se encontró adb"
+    echo ""
+    echo "Opciones para solucionarlo:"
+    echo "1. Crear/actualizar local.properties con: sdk.dir=/ruta/a/tu/sdk"
+    echo "2. Configurar variable de entorno: export ANDROID_HOME=/ruta/a/tu/sdk"
+    echo "3. Agregar adb a tu PATH: export PATH=\$PATH:/ruta/a/platform-tools"
+    echo ""
+    echo "Ubicaciones comunes en macOS:"
+    echo "  ~/Library/Android/sdk/platform-tools/adb"
+    echo "  ~/Android/Sdk/platform-tools/adb"
     exit 1
 fi
+
+echo "✅ ADB encontrado en: $ADB"
 
 # Verificar dispositivo conectado
 DEVICES=$($ADB devices | grep -v "List" | grep "device$" | wc -l | tr -d ' ')

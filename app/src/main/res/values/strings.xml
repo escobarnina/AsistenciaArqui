@@ -1,3 +1,105 @@
+<?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <!-- Nombre de la aplicación -->
     <string name="app_name">AsistenciaApp</string>
+    
+    <!-- Pantalla de Login -->
+    <string name="login_title">Iniciar Sesión</string>
+    <string name="login_username">Usuario</string>
+    <string name="login_password">Contraseña</string>
+    <string name="login_button">Ingresar</string>
+    <string name="login_error">Credenciales incorrectas</string>
+    <string name="login_username_hint">Ingrese su usuario</string>
+    <string name="login_password_hint">Ingrese su contraseña</string>
+    
+    <!-- Roles -->
+    <string name="role_admin">Administrador</string>
+    <string name="role_docente">Docente</string>
+    <string name="role_alumno">Alumno</string>
+    
+    <!-- Acciones comunes -->
+    <string name="action_save">Guardar</string>
+    <string name="action_cancel">Cancelar</string>
+    <string name="action_delete">Eliminar</string>
+    <string name="action_edit">Editar</string>
+    <string name="action_add">Agregar</string>
+    <string name="action_back">Volver</string>
+    <string name="action_logout">Cerrar Sesión</string>
+    <string name="action_search">Buscar</string>
+    <string name="action_filter">Filtrar</string>
+    
+    <!-- Mensajes de éxito -->
+    <string name="success_saved">Guardado exitosamente</string>
+    <string name="success_deleted">Eliminado exitosamente</string>
+    <string name="success_updated">Actualizado exitosamente</string>
+    
+    <!-- Mensajes de error -->
+    <string name="error_required_field">Este campo es requerido</string>
+    <string name="error_invalid_data">Datos inválidos</string>
+    <string name="error_network">Error de conexión</string>
+    <string name="error_unknown">Ha ocurrido un error</string>
+    
+    <!-- Validaciones -->
+    <string name="validation_username_exists">El usuario ya existe</string>
+    <string name="validation_sigla_exists">La sigla ya está en uso</string>
+    <string name="validation_schedule_conflict">Hay cruce de horarios</string>
+    <string name="validation_group_full">El grupo está lleno</string>
+    <string name="validation_not_enrolled">No está inscrito en este grupo</string>
+    
+    <!-- Gestión de Usuarios -->
+    <string name="users_title">Gestión de Usuarios</string>
+    <string name="user_name">Nombre</string>
+    <string name="user_lastname">Apellido</string>
+    <string name="user_registry">Registro</string>
+    <string name="user_role">Rol</string>
+    <string name="user_username">Usuario</string>
+    
+    <!-- Gestión de Materias -->
+    <string name="subjects_title">Gestión de Materias</string>
+    <string name="subject_name">Nombre de la Materia</string>
+    <string name="subject_code">Sigla</string>
+    <string name="subject_level">Nivel</string>
+    
+    <!-- Gestión de Grupos -->
+    <string name="groups_title">Gestión de Grupos</string>
+    <string name="group_name">Grupo</string>
+    <string name="group_subject">Materia</string>
+    <string name="group_teacher">Docente</string>
+    <string name="group_semester">Semestre</string>
+    <string name="group_year">Gestión</string>
+    <string name="group_capacity">Capacidad</string>
+    <string name="group_enrolled">Inscritos</string>
+    
+    <!-- Gestión de Horarios -->
+    <string name="schedules_title">Gestión de Horarios</string>
+    <string name="schedule_day">Día</string>
+    <string name="schedule_start">Hora Inicio</string>
+    <string name="schedule_end">Hora Fin</string>
+    
+    <!-- Inscripciones -->
+    <string name="enrollments_title">Mis Inscripciones</string>
+    <string name="enrollment_date">Fecha de Inscripción</string>
+    <string name="enrollment_subject">Materia</string>
+    <string name="enrollment_group">Grupo</string>
+    <string name="enrollment_schedule">Horario</string>
+    
+    <!-- Asistencias -->
+    <string name="attendances_title">Mis Asistencias</string>
+    <string name="attendance_date">Fecha</string>
+    <string name="attendance_subject">Materia</string>
+    <string name="attendance_group">Grupo</string>
+    <string name="mark_attendance">Marcar Asistencia</string>
+    
+    <!-- Días de la semana -->
+    <string name="day_monday">Lunes</string>
+    <string name="day_tuesday">Martes</string>
+    <string name="day_wednesday">Miércoles</string>
+    <string name="day_thursday">Jueves</string>
+    <string name="day_friday">Viernes</string>
+    <string name="day_saturday">Sábado</string>
+    <string name="day_sunday">Domingo</string>
+    
+    <!-- Semestres -->
+    <string name="semester_1">Primer Semestre</string>
+    <string name="semester_2">Segundo Semestre</string>
 </resources>

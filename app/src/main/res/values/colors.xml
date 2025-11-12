@@ -1,10 +1,51 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <color name="purple_200">#FFBB86FC</color>
-    <color name="purple_500">#FF6200EE</color>
-    <color name="purple_700">#FF3700B3</color>
-    <color name="teal_200">#FF03DAC5</color>
-    <color name="teal_700">#FF018786</color>
+    <!--
+        Paleta de colores para la aplicación AsistenciaApp.
+        
+        NOTA: Esta aplicación usa Jetpack Compose, donde los colores se definen
+        principalmente en Color.kt. Este archivo XML se mantiene para:
+        1. Compatibilidad con componentes del sistema (splash screen, notificaciones)
+        2. Referencias en AndroidManifest.xml
+        3. Posibles componentes Views tradicionales
+        
+        Los colores principales están sincronizados con Color.kt.
+    -->
+    
+    <!-- Colores primarios (Azul académico) -->
+    <color name="blue_80">#FF9BB5FF</color>      <!-- Primary para tema oscuro -->
+    <color name="blue_40">#FF2563EB</color>      <!-- Primary para tema claro -->
+    
+    <!-- Colores secundarios (Verde) -->
+    <color name="green_80">#FF81D4A3</color>     <!-- Secondary para tema oscuro -->
+    <color name="green_40">#FF10B981</color>     <!-- Secondary para tema claro -->
+    
+    <!-- Colores terciarios (Naranja) -->
+    <color name="orange_80">#FFFFB88C</color>    <!-- Tertiary para tema oscuro -->
+    <color name="orange_40">#FFF97316</color>   <!-- Tertiary para tema claro -->
+    
+    <!-- Colores de estado -->
+    <color name="error_80">#FFF87171</color>     <!-- Error para tema oscuro -->
+    <color name="error_40">#FFEF4444</color>     <!-- Error para tema claro -->
+    <color name="success_80">#FF6EE7B7</color>   <!-- Success para tema oscuro -->
+    <color name="success_40">#FF10B981</color>  <!-- Success para tema claro -->
+    
+    <!-- Colores neutros -->
+    <color name="neutral_80">#FFE5E7EB</color>   <!-- Neutral para tema oscuro -->
+    <color name="neutral_40">#FF6B7280</color>  <!-- Neutral para tema claro -->
+    
+    <!-- Colores de superficie -->
+    <color name="surface_dark">#FF1E293B</color>  <!-- Superficie para tema oscuro -->
+    <color name="surface_light">#FFFFFFFF</color> <!-- Superficie para tema claro -->
+    
+    <!-- Colores de fondo -->
+    <color name="background_dark">#FF0F172A</color>  <!-- Fondo para tema oscuro -->
+    <color name="background_light">#FFF8FAFC</color> <!-- Fondo para tema claro -->
+    
+    <!-- Colores básicos -->
     <color name="black">#FF000000</color>
     <color name="white">#FFFFFFFF</color>
+    
+    <!-- Color primario para uso en sistema (splash, status bar, etc.) -->
+    <color name="primary">#FF2563EB</color>      <!-- Azul académico principal -->
 </resources>
