@@ -11,7 +11,7 @@ Aplicación Android para la gestión de usuarios, materias, horarios, inscripcio
 - **Gestión de dependencias:** Gradle con catálogo de versiones (`libs.versions.toml`).
 
 ## Arquitectura actual
-El proyecto sigue una estructura en capas que se alinea con un diagrama genérico de tres capas:
+El proyecto sigue una arquitectura en capas limpia y bien definida, respetando el principio de separación de responsabilidades:
 
 ```
 ┌───────────────────────────────┐
@@ -23,9 +23,276 @@ El proyecto sigue una estructura en capas que se alinea con un diagrama genéric
 └───────────────────────────────┘
 ```
 
-- **Presentación (`presentation/`, `ui/`):** Composables para login, dashboards y formularios de administración/alumno. Usa `AppNavHost` para dirigir según rol.
-- **Dominio (`domain/`):** Modelos de negocio y casos de uso (`UsuarioCU`, `MateriaCU`, etc.) que orquestan la lógica usando Repositories.
-- **Datos (`data/`):** Arquitectura completa con Singleton (`AppDatabase`), DAOs por entidad, Repositories que abstraen el acceso a datos, y `UserSession` para manejo de sesión en `SharedPreferences`.
+### Flujo de datos completo
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│ PRESENTACIÓN (UI Layer)                                      │
+│ ┌─────────────────────────────────────────────────────────┐ │
+│ │  Screens (Compose)                                       │ │
+│ │  ├─ LoginScreen                                         │ │
+│ │  ├─ AdminHome, PUsuario, PMateria, PGrupo, PHorario    │ │
+│ │  └─ AlumnoHome, GestionarInscripciones, GestionarAsist. │ │
+│ │                                                          │ │
+│ │  Observa: viewModel.uiState.collectAsState()            │ │
+│ │  Dispara: viewModel.accion()                            │ │
+│ └────────────────────┬────────────────────────────────────┘ │
+└──────────────────────┼──────────────────────────────────────┘
+                       │
+                       ▼
+┌─────────────────────────────────────────────────────────────┐
+│ DOMINIO - ViewModels (UI State Management)                  │
+│ ┌─────────────────────────────────────────────────────────┐ │
+│ │  ViewModels                                             │ │
+│ │  ├─ VMLogin                                             │ │
+│ │  ├─ VMUsuario, VMMateria, VMGrupo, VMHorario          │ │
+│ │  └─ VMInscripcion, VMAsistencia                         │ │
+│ │                                                          │ │
+│ │  Responsabilidades:                                      │ │
+│ │  • Gestionar estado de UI (Loading, Success, Error)     │ │
+│ │  • Exponer datos reactivos (StateFlow)                  │ │
+│ │  • Orquestar casos de uso                               │ │
+│ │  • Manejar errores y estados de carga                  │ │
+│ └────────────────────┬────────────────────────────────────┘ │
+└──────────────────────┼──────────────────────────────────────┘
+                       │
+                       ▼
+┌─────────────────────────────────────────────────────────────┐
+│ DOMINIO - Casos de Uso (Business Logic)                     │
+│ ┌─────────────────────────────────────────────────────────┐ │
+│ │  UseCases                                               │ │
+│ │  ├─ UsuarioCU                                           │ │
+│ │  ├─ MateriaCU, GrupoCU, HorarioCU                      │ │
+│ │  └─ InscripcionCU, AsistenciaCU                        │ │
+│ │                                                          │ │
+│ │  Responsabilidades:                                      │ │
+│ │  • Validar datos de entrada                             │ │
+│ │  • Aplicar reglas de negocio                            │ │
+│ │  • Orquestar operaciones complejas                      │ │
+│ │  • Retornar ValidationResult (Success/Error)           │ │
+│ └────────────────────┬────────────────────────────────────┘ │
+└──────────────────────┼──────────────────────────────────────┘
+                       │
+                       ▼
+┌─────────────────────────────────────────────────────────────┐
+│ DATOS - Repositories (Data Abstraction)                      │
+│ ┌─────────────────────────────────────────────────────────┐ │
+│ │  Repositories                                            │ │
+│ │  ├─ UsuarioRepository                                   │ │
+│ │  ├─ MateriaRepository, GrupoRepository, HorarioRepo   │ │
+│ │  └─ InscripcionRepository, AsistenciaRepository        │ │
+│ │                                                          │ │
+│ │  Responsabilidades:                                      │ │
+│ │  • Abstraer acceso a datos                              │ │
+│ │  • Delegar a DAOs correspondientes                      │ │
+│ │  • Permitir cambio de fuente sin afectar UseCases      │ │
+│ └────────────────────┬────────────────────────────────────┘ │
+└──────────────────────┼──────────────────────────────────────┘
+                       │
+                       ▼
+┌─────────────────────────────────────────────────────────────┐
+│ DATOS - DAOs (Data Access Objects)                           │
+│ ┌─────────────────────────────────────────────────────────┐ │
+│ │  DAOs                                                    │ │
+│ │  ├─ UsuarioDao                                          │ │
+│ │  ├─ MateriaDao, GrupoDao, HorarioDao                   │ │
+│ │  └─ InscripcionDao, AsistenciaDao                      │ │
+│ │                                                          │ │
+│ │  Responsabilidades:                                      │ │
+│ │  • Operaciones CRUD específicas por entidad             │ │
+│ │  • Acceso directo a SQLite (raw queries)                │ │
+│ │  • Transformar resultados a modelos de dominio          │ │
+│ └────────────────────┬────────────────────────────────────┘ │
+└──────────────────────┼──────────────────────────────────────┘
+                       │
+                       ▼
+┌─────────────────────────────────────────────────────────────┐
+│ DATOS - AppDatabase (Singleton)                              │
+│ ┌─────────────────────────────────────────────────────────┐ │
+│ │  AppDatabase (Singleton)                                │ │
+│ │  • getInstance(context) - Instancia única               │ │
+│ │  • Proporciona acceso lazy a DAOs                       │ │
+│ │  • Gestiona ciclo de vida de SQLite                     │ │
+│ │                                                          │ │
+│ │  UserSession (SharedPreferences)                        │ │
+│ │  • Manejo de sesión de usuario                         │ │
+│ └─────────────────────────────────────────────────────────┘ │
+└─────────────────────────────────────────────────────────────┘
+```
+
+### Relaciones entre componentes
+
+**Capa de Presentación:**
+- **Screens Compose** → Observan y llaman a **ViewModels**
+- **ViewModels** → Usan **UseCases** para lógica de negocio
+- **Navegación** → `AppNavHost` gestiona rutas según rol
+
+**Capa de Dominio:**
+- **ViewModels** → Dependen de **UseCases** (inyección manual actual)
+- **UseCases** → Dependen de **Repositories** (inyección manual actual)
+- **Modelos** → Entidades de dominio independientes de frameworks
+
+**Capa de Datos:**
+- **Repositories** → Dependen de **DAOs** (inyección manual actual)
+- **DAOs** → Dependen de **AppDatabase** (acceso a SQLiteDatabase)
+- **AppDatabase** → Singleton que proporciona acceso a DAOs
+- **UserSession** → Independiente, usa SharedPreferences
+
+### Principios arquitectónicos aplicados
+
+1. **Separación de Responsabilidades (SRP):** Cada capa tiene una responsabilidad única y bien definida
+2. **Dependency Inversion:** Las capas superiores dependen de abstracciones (Repositories), no de implementaciones concretas
+3. **Single Source of Truth:** ViewModels son la única fuente de verdad para el estado de UI
+4. **Unidirectional Data Flow:** Datos fluyen en una sola dirección (UI → ViewModel → UseCase → Repository → DAO → Database)
+5. **Testabilidad:** Cada capa puede ser testeada independientemente mediante mocking
+
+### Relaciones entre clases detalladas
+
+#### Relación: Screen → ViewModel → UseCase → Repository → DAO
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│ Ejemplo: PUsuario.kt (Screen)                               │
+│                                                              │
+│ val viewModel: VMUsuario = viewModel {                      │
+│     VMUsuario(usuarioCU)  ←─── Depende de UseCase          │
+│ }                                                            │
+│                                                              │
+│ viewModel.agregarUsuario(...)  ←─── Llama método            │
+└────────────────────────┬────────────────────────────────────┘
+                         │
+                         ▼
+┌─────────────────────────────────────────────────────────────┐
+│ VMUsuario.kt (ViewModel)                                    │
+│                                                              │
+│ class VMUsuario(                                             │
+│     private val usuarioCU: UsuarioCU  ←─── Depende de UseCase│
+│ ) {                                                          │
+│     fun agregarUsuario(...) {                                │
+│         val result = usuarioCU.agregarUsuario(...)           │
+│     }                                                        │
+│ }                                                            │
+└────────────────────────┬────────────────────────────────────┘
+                         │
+                         ▼
+┌─────────────────────────────────────────────────────────────┐
+│ UsuarioCU.kt (UseCase)                                      │
+│                                                              │
+│ class UsuarioCU(                                            │
+│     private val usuarioRepository: UsuarioRepository  ←─── Depende de Repository│
+│ ) {                                                          │
+│     fun agregarUsuario(...): ValidationResult {              │
+│         usuarioRepository.agregar(...)                       │
+│     }                                                        │
+│ }                                                            │
+└────────────────────────┬────────────────────────────────────┘
+                         │
+                         ▼
+┌─────────────────────────────────────────────────────────────┐
+│ UsuarioRepository.kt (Repository)                           │
+│                                                              │
+│ class UsuarioRepository(                                    │
+│     private val database: AppDatabase  ←─── Depende de AppDatabase│
+│ ) {                                                          │
+│     fun agregar(...) {                                      │
+│         database.usuarioDao.insertar(...)  ←─── Usa DAO     │
+│     }                                                        │
+│ }                                                            │
+└────────────────────────┬────────────────────────────────────┘
+                         │
+                         ▼
+┌─────────────────────────────────────────────────────────────┐
+│ UsuarioDao.kt (DAO)                                         │
+│                                                              │
+│ class UsuarioDao(                                           │
+│     private val database: SQLiteDatabase  ←─── Depende de SQLite│
+│ ) {                                                          │
+│     fun insertar(...) {                                     │
+│         database.execSQL("INSERT INTO usuarios...")          │
+│     }                                                        │
+│ }                                                            │
+└────────────────────────┬────────────────────────────────────┘
+                         │
+                         ▼
+┌─────────────────────────────────────────────────────────────┐
+│ AppDatabase.kt (Singleton)                                  │
+│                                                              │
+│ class AppDatabase private constructor(...) {                │
+│     val usuarioDao: UsuarioDao by lazy {                    │
+│         UsuarioDao(writableDatabase)  ←─── Crea DAO         │
+│     }                                                        │
+│ }                                                            │
+└─────────────────────────────────────────────────────────────┘
+```
+
+#### Dependencias en el código
+
+**En las pantallas (Presentation):**
+```kotlin
+// PUsuario.kt
+val database = remember { AppDatabase.getInstance(context) }
+val usuarioRepository = remember { UsuarioRepository(database) }
+val usuarioCU = remember { UsuarioCU(usuarioRepository) }
+val viewModel: VMUsuario = viewModel { VMUsuario(usuarioCU) }
+```
+
+**En los ViewModels (Domain):**
+```kotlin
+// VMUsuario.kt
+class VMUsuario(private val usuarioCU: UsuarioCU) {
+    fun agregarUsuario(...) {
+        val result = usuarioCU.agregarUsuario(...)
+    }
+}
+```
+
+**En los UseCases (Domain):**
+```kotlin
+// UsuarioCU.kt
+class UsuarioCU(private val usuarioRepository: UsuarioRepository) {
+    fun agregarUsuario(...): ValidationResult {
+        usuarioRepository.agregar(...)
+    }
+}
+```
+
+**En los Repositories (Data):**
+```kotlin
+// UsuarioRepository.kt
+class UsuarioRepository(private val database: AppDatabase) {
+    fun agregar(...) {
+        database.usuarioDao.insertar(...)
+    }
+}
+```
+
+**En los DAOs (Data):**
+```kotlin
+// UsuarioDao.kt
+class UsuarioDao(private val database: SQLiteDatabase) {
+    fun insertar(...) {
+        database.execSQL("INSERT INTO usuarios...")
+    }
+}
+```
+
+#### Reglas de dependencia
+
+✅ **Permitido:**
+- Pantallas → ViewModels
+- ViewModels → UseCases
+- UseCases → Repositories
+- Repositories → DAOs
+- DAOs → AppDatabase
+- ViewModels → UserSession (para sesión)
+
+❌ **Prohibido:**
+- Pantallas → UseCases directamente (debe pasar por ViewModel)
+- Pantallas → Repositories directamente
+- Pantallas → DAOs directamente
+- Pantallas → AppDatabase directamente (excepto para crear dependencias)
+- UseCases → DAOs directamente (debe pasar por Repository)
+- ViewModels → DAOs directamente
 
 ## Composición del proyecto
 
@@ -70,13 +337,17 @@ app/src/main/java/com/bo/asistenciaapp/
 │   │   ├── HorarioCU.kt
 │   │   ├── InscripcionCU.kt
 │   │   └── AsistenciaCU.kt
-│   └── viewmodel/                    # ViewModels (estado UI)
-│       ├── VMUsuario.kt
-│       ├── VMMateria.kt
-│       ├── VMGrupo.kt
-│       ├── VMHorario.kt
-│       ├── VMInscripcion.kt
-│       └── VMAsistencia.kt
+│   ├── viewmodel/                    # ViewModels (estado UI)
+│   │   ├── VMLogin.kt                # ViewModel para login
+│   │   ├── VMUsuario.kt             # Gestión de usuarios
+│   │   ├── VMMateria.kt             # Gestión de materias
+│   │   ├── VMGrupo.kt               # Gestión de grupos
+│   │   ├── VMHorario.kt             # Gestión de horarios
+│   │   ├── VMInscripcion.kt         # Gestión de inscripciones
+│   │   └── VMAsistencia.kt          # Gestión de asistencias
+│   └── utils/                        # Utilidades de dominio
+│       ├── Validators.kt            # Validadores reutilizables
+│       └── ValidationResult.kt      # Resultado de validaciones
 └── presentation/                      # CAPA DE PRESENTACIÓN
     ├── login/
     │   └── LoginScreen.kt
@@ -196,22 +467,95 @@ UseCases
 - **`Boleta`**: id, inscripcion_id, nota_final
 
 #### Casos de Uso (`domain/usecase/`)
-Encapsulan la lógica de negocio y orquestan operaciones usando Repositories:
-- **`UsuarioCU`**: `validarUsuario()`, `obtenerUsuarios()`, `obtenerDocentes()`, `agregarUsuario()`, `eliminarUsuario()`, `actualizarUsuario()`
-- **`MateriaCU`**: `obtenerMaterias()`, `agregarMateria()`, `eliminarMateria()`
-- **`GrupoCU`**: `obtenerGrupos()`, `agregarGrupo()`, `eliminarGrupo()`
-- **`HorarioCU`**: `obtenerHorarios()`, `agregarHorario()`, `eliminarHorario()`
-- **`InscripcionCU`**: `obtenerInscripciones()`, `agregarInscripcion()`, `tieneCruceDeHorario()`
-- **`AsistenciaCU`**: `obtenerAsistencias()`, `marcarAsistencia()`, `puedeMarcarAsistencia()`
+Encapsulan la lógica de negocio y orquestan operaciones usando Repositories. Cada caso de uso sigue el patrón de validación y retorno de resultados:
 
-**Arquitectura:** Los casos de uso usan Repositories, que a su vez usan DAOs, siguiendo el patrón Repository.
+**Casos de uso implementados:**
+- **`UsuarioCU`**: 
+  - `validarUsuario()`: Autenticación
+  - `obtenerUsuarios()`, `obtenerDocentes()`: Consultas
+  - `agregarUsuario()`, `eliminarUsuario()`, `actualizarUsuario()`: CRUD con validaciones
+- **`MateriaCU`**: 
+  - `obtenerMaterias()`: Consulta
+  - `agregarMateria()`, `eliminarMateria()`: CRUD con validación de siglas únicas
+- **`GrupoCU`**: 
+  - `obtenerGrupos()`: Consulta
+  - `agregarGrupo()`, `eliminarGrupo()`: CRUD con validaciones de capacidad y semestre
+- **`HorarioCU`**: 
+  - `obtenerHorarios()`: Consulta
+  - `agregarHorario()`, `eliminarHorario()`: CRUD con validación de rangos de tiempo
+- **`InscripcionCU`**: 
+  - `obtenerInscripciones()`: Consulta por alumno
+  - `agregarInscripcion()`: Validación de cruces de horario
+  - `tieneCruceDeHorario()`: Verificación de conflictos
+- **`AsistenciaCU`**: 
+  - `obtenerAsistencias()`: Consulta por alumno
+  - `marcarAsistencia()`: Validación de horarios y permisos
+  - `puedeMarcarAsistencia()`: Verificación de condiciones
+
+**Características:**
+- **Validaciones:** Usan `Validators` y retornan `ValidationResult` (Success/Error)
+- **Reglas de negocio:** Implementan validaciones específicas (username único, sigla única, cruces de horario, etc.)
+- **Dependencias:** Reciben Repositories en el constructor (inyección manual actual)
+- **Independencia:** No dependen de frameworks Android, solo de Kotlin estándar
+
+**Ejemplo de validación:**
+```kotlin
+fun agregarUsuario(...): ValidationResult {
+    val validation = validarDatosUsuario(...)
+    if (!validation.isValid) return validation
+    
+    // Validación de negocio adicional
+    val usuarioExistente = usuarioRepository.obtenerTodos().find { it.username == username }
+    if (usuarioExistente != null) {
+        return ValidationResult.Error("El username ya está en uso")
+    }
+    
+    usuarioRepository.agregar(...)
+    return ValidationResult.Success
+}
+```
+
+**Arquitectura:** Los casos de uso usan Repositories, que a su vez usan DAOs, siguiendo el patrón Repository. Esto permite cambiar la fuente de datos sin afectar la lógica de negocio.
 
 #### ViewModels (`domain/viewmodel/`)
-Gestionan el estado de la UI y exponen datos reactivos:
-- **`VMUsuario`**, **`VMMateria`**, **`VMGrupo`**, **`VMHorario`**, **`VMInscripcion`**, **`VMAsistencia`**
-- Usan `StateFlow` para exponer estado reactivo a la UI
-- Ejecutan casos de uso en corutinas (`viewModelScope`)
-- **Problema actual:** Dependencias manuales (sin inyección de dependencias)
+Gestionan el estado de la UI y exponen datos reactivos usando el patrón de UI State Management:
+
+**ViewModels implementados:**
+- **`VMLogin`**: Maneja autenticación y estado de login (Idle, Loading, Success, Error)
+- **`VMUsuario`**: Gestión completa de usuarios con UI state management
+- **`VMMateria`**: Gestión de materias con validaciones y estados
+- **`VMGrupo`**: Gestión de grupos, incluye materias y docentes
+- **`VMHorario`**: Gestión de horarios con validación de conflictos
+- **`VMInscripcion`**: Gestión de inscripciones con validación de cruces de horario
+- **`VMAsistencia`**: Gestión de asistencias con validación de horarios
+
+**Características:**
+- **UI State Management:** Cada ViewModel expone un `sealed class` para estados (Idle, Loading, Success, Error)
+- **StateFlow reactivo:** Exponen datos mediante `StateFlow` que la UI observa con `collectAsState()`
+- **Manejo de errores:** Capturan excepciones y las exponen como estados de error
+- **Validaciones:** Los UseCases retornan `ValidationResult` que los ViewModels manejan
+- **Corutinas:** Ejecutan casos de uso en `viewModelScope.launch`
+- **Dependencias:** Actualmente inyección manual (oportunidad de mejora con Hilt)
+
+**Ejemplo de uso:**
+```kotlin
+// En la pantalla
+val viewModel: VMUsuario = viewModel { VMUsuario(usuarioCU) }
+val usuarios by viewModel.usuarios.collectAsState()
+val uiState by viewModel.uiState.collectAsState()
+
+// Observar estados
+LaunchedEffect(uiState) {
+    when (val state = uiState) {
+        is UsuarioUiState.Success -> { /* Mostrar mensaje */ }
+        is UsuarioUiState.Error -> { /* Mostrar error */ }
+        else -> {}
+    }
+}
+
+// Disparar acciones
+viewModel.agregarUsuario(nombres, apellidos, ...)
+```
 
 ### Capa de Presentación (`presentation/`)
 
@@ -237,10 +581,13 @@ Gestionan el estado de la UI y exponen datos reactivos:
 
 #### Pantallas principales
 
+Todas las pantallas siguen el mismo patrón arquitectónico: **UI → ViewModel → UseCase → Repository → DAO → Database**
+
 1. **`LoginScreen.kt`**
-   - Valida credenciales usando `UsuarioRepository` → `UsuarioDao` → `AppDatabase`
-   - Guarda sesión en `UserSession` al autenticar
-   - Redirige según rol del usuario
+   - **ViewModel:** `VMLogin` (maneja estados: Idle, Loading, Success, Error)
+   - **UseCase:** `UsuarioCU.validarUsuario()`
+   - **Flujo:** Valida credenciales → Guarda sesión en `UserSession` → Redirige según rol
+   - **UI State:** Maneja estados de carga y errores con Material Design 3
 
 2. **`AdminHomeScreen.kt`**
    - Dashboard principal del administrador
@@ -248,89 +595,172 @@ Gestionan el estado de la UI y exponen datos reactivos:
    - Opción de logout
 
 3. **`GestionarUsuariosScreen.kt`** (PUsuario.kt)
-   - CRUD completo de usuarios
-   - Usa `VMUsuario` y `UsuarioCU`
-   - Permite crear, editar y eliminar usuarios
+   - **ViewModel:** `VMUsuario`
+   - **UseCase:** `UsuarioCU` (agregar, eliminar, actualizar)
+   - **Características:** CRUD completo con validaciones, estados de carga, manejo de errores
+   - **UI:** Lista reactiva, formularios con validación, diálogos de edición
 
 4. **`GestionarMateriasScreen.kt`** (PMateria.kt)
-   - CRUD completo de materias
-   - Validación de siglas únicas
+   - **ViewModel:** `VMMateria`
+   - **UseCase:** `MateriaCU` (agregar, eliminar)
+   - **Validaciones:** Siglas únicas, niveles válidos
+   - **UI:** Lista con acciones de eliminación, formulario con validación
 
 5. **`GestionarGruposScreen.kt`** (PGrupo.kt)
-   - CRUD completo de grupos
-   - Relaciona materias con docentes
+   - **ViewModel:** `VMGrupo` (incluye materias y docentes)
+   - **UseCase:** `GrupoCU` (agregar, eliminar)
+   - **Características:** Dropdowns para selección de materia y docente
+   - **Validaciones:** Capacidad, semestre, gestión
 
 6. **`GestionarHorarios.kt`** (PHorario.kt)
-   - CRUD completo de horarios
-   - Asigna horarios a grupos
+   - **ViewModel:** `VMHorario` (incluye grupos)
+   - **UseCase:** `HorarioCU` (agregar, eliminar)
+   - **Validaciones:** Formato de hora (HH:mm), rango válido
+   - **UI:** Selector de grupo y día, campos de hora
 
 7. **`AlumnoHomeScreen.kt`**
    - Dashboard principal del alumno
    - Acceso a sus inscripciones y asistencias
 
 8. **`GestionarInscripciones.kt`**
-   - Alumno puede ver y gestionar sus inscripciones
-   - Filtrado por semestre y año
+   - **ViewModel:** `VMInscripcion` (incluye grupos disponibles y boletas del alumno)
+   - **UseCase:** `InscripcionCU` (agregar con validación de cruces)
+   - **Validaciones:** Cruce de horarios, capacidad del grupo
+   - **UI:** Lista de grupos disponibles, botón de inscripción, lista de inscripciones actuales
 
 9. **`GestionarAsistenca.kt`**
-   - Alumno puede ver sus asistencias registradas
+   - **ViewModel:** `VMAsistencia` (incluye grupos inscritos y asistencias)
+   - **UseCase:** `AsistenciaCU` (marcar con validación de horarios)
+   - **Validaciones:** Horario correcto, alumno inscrito
+   - **UI:** Lista de grupos para marcar asistencia, historial de asistencias
 
-### Flujo de datos
+### Flujo de datos detallado
+
+**Ejemplo completo: Agregar un usuario desde la UI**
+
+```
+1. Usuario hace clic en "Agregar Usuario"
+   └─> PUsuario.kt: Button.onClick { viewModel.agregarUsuario(...) }
+
+2. ViewModel procesa la acción
+   └─> VMUsuario.agregarUsuario()
+       ├─> Cambia estado a Loading
+       └─> Ejecuta en viewModelScope.launch
+
+3. ViewModel llama al Caso de Uso
+   └─> UsuarioCU.agregarUsuario(...)
+       ├─> Valida datos (Validators)
+       ├─> Verifica reglas de negocio (username único)
+       └─> Retorna ValidationResult
+
+4. Caso de Uso usa el Repository
+   └─> UsuarioRepository.agregar(...)
+       └─> Delega al DAO
+
+5. Repository delega al DAO
+   └─> UsuarioDao.insertar(...)
+       └─> Ejecuta SQL en SQLiteDatabase
+
+6. DAO accede a la base de datos
+   └─> AppDatabase.writableDatabase.execSQL(...)
+       └─> SQLite guarda el registro
+
+7. ViewModel actualiza el estado
+   └─> Si Success: recargar() → actualiza StateFlow
+   └─> Si Error: actualiza uiState con mensaje de error
+
+8. UI reacciona al cambio
+   └─> collectAsState() detecta cambio
+       ├─> Actualiza lista de usuarios
+       └─> Muestra mensaje de éxito/error
+```
+
+**Flujo de datos reactivo:**
 
 ```
 ┌─────────────────────────────────────────────────────────┐
 │  PRESENTACIÓN (Compose Screens)                          │
 │  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐    │
 │  │ LoginScreen  │  │ AdminHome   │  │ AlumnoHome  │    │
+│  │              │  │ PUsuario    │  │ Gestionar   │    │
+│  │              │  │ PMateria    │  │ Inscripc.   │    │
 │  └──────┬───────┘  └──────┬───────┘  └──────┬───────┘    │
 │         │                 │                  │            │
+│         │ Observa StateFlow│                  │            │
+│         │ Dispara acciones │                  │            │
 │         └─────────────────┼──────────────────┘            │
 │                           │                              │
 │                    AppNavHost                            │
 └───────────────────────────┼──────────────────────────────┘
                              │
-                             ▼
+                             ▼ (viewModel.accion())
 ┌─────────────────────────────────────────────────────────┐
-│  DOMINIO - ViewModels                                    │
+│  DOMINIO - ViewModels (UI State Management)              │
 │  ┌──────────────┐  ┌──────────────┐                      │
-│  │ VMUsuario    │  │ VMMateria    │                      │
-│  │ VMGrupo      │  │ VMHorario    │                      │
+│  │ VMLogin      │  │ VMUsuario    │                      │
+│  │ VMGrupo      │  │ VMMateria    │                      │
+│  │ VMHorario    │  │ VMInscripcion│                      │
+│  │ VMAsistencia │  │              │                      │
+│  │              │  │              │                      │
+│  │ Estados:     │  │ Estados:     │                      │
+│  │ • Idle       │  │ • Idle       │                      │
+│  │ • Loading    │  │ • Loading    │                      │
+│  │ • Success    │  │ • Success    │                      │
+│  │ • Error      │  │ • Error      │                      │
 │  └──────┬───────┘  └──────┬───────┘                      │
+│         │                 │                              │
+│         │ StateFlow        │                              │
+│         │ (reactivo)       │                              │
 └─────────┼─────────────────┼────────────────────────────┘
           │                 │
-          ▼                 ▼
+          ▼ (usecase.accion())
 ┌─────────────────────────────────────────────────────────┐
-│  DOMINIO - Casos de Uso                                  │
+│  DOMINIO - Casos de Uso (Business Logic)                 │
 │  ┌──────────────┐  ┌──────────────┐                      │
 │  │ UsuarioCU    │  │ MateriaCU    │                      │
 │  │ GrupoCU      │  │ HorarioCU    │                      │
+│  │ InscripcionCU│  │ AsistenciaCU │                      │
+│  │              │  │              │                      │
+│  │ Validaciones │  │ Validaciones │                      │
+│  │ Reglas negocio│ │ Reglas negocio│                     │
+│  │ Retorna:     │  │ Retorna:     │                      │
+│  │ ValidationResult││ ValidationResult│                 │
 │  └──────┬───────┘  └──────┬───────┘                      │
 └─────────┼─────────────────┼────────────────────────────┘
           │                 │
-          ▼                 ▼
+          ▼ (repository.accion())
 ┌─────────────────────────────────────────────────────────┐
-│  DATOS - Repositories                                    │
+│  DATOS - Repositories (Data Abstraction)                  │
 │  ┌──────────────┐  ┌──────────────┐                      │
 │  │ UsuarioRepo  │  │ MateriaRepo  │                      │
 │  │ GrupoRepo    │  │ HorarioRepo  │                      │
+│  │ InscripcionRepo││ AsistenciaRepo│                    │
+│  │              │  │              │                      │
+│  │ Abstrae acceso│ │ Abstrae acceso│                     │
 │  └──────┬───────┘  └──────┬───────┘                      │
 └─────────┼─────────────────┼────────────────────────────┘
           │                 │
-          ▼                 ▼
+          ▼ (dao.accion())
 ┌─────────────────────────────────────────────────────────┐
-│  DATOS - DAOs                                            │
+│  DATOS - DAOs (Data Access Objects)                      │
 │  ┌──────────────┐  ┌──────────────┐                      │
 │  │ UsuarioDao   │  │ MateriaDao   │                      │
 │  │ GrupoDao     │  │ HorarioDao   │                      │
+│  │ InscripcionDao│ │ AsistenciaDao│                      │
+│  │              │  │              │                      │
+│  │ CRUD SQLite  │  │ CRUD SQLite  │                      │
 │  └──────┬───────┘  └──────┬───────┘                      │
 └─────────┼─────────────────┼────────────────────────────┘
           │                 │
-          ▼                 ▼
+          ▼ (AppDatabase.getInstance())
 ┌─────────────────────────────────────────────────────────┐
 │  DATOS - AppDatabase (Singleton)                        │
 │  ┌──────────────┐  ┌──────────────┐                      │
 │  │ AppDatabase   │  │ UserSession │                      │
 │  │ (SQLite)     │  │ (SharedPref)│                      │
+│  │              │  │              │                      │
+│  │ • Singleton  │  │ • Sesión     │                      │
+│  │ • DAOs lazy  │  │ • Usuario    │                      │
 │  └──────────────┘  └──────────────┘                      │
 └─────────────────────────────────────────────────────────┘
 ```
@@ -373,12 +803,85 @@ Gestionan el estado de la UI y exponen datos reactivos:
 10. **Datos de prueba completos:** Seeder incluye 10 usuarios, 20 materias, 20 grupos, 38 horarios, 21 inscripciones y 34 asistencias
 
 ## Flujo del sistema
-1. **Inicio:** `MainActivity` carga `AppNavHost`.
-2. **Autenticación:** `LoginScreen` valida usuario/contraseña usando `UsuarioRepository` → `UsuarioDao` → `AppDatabase` y persiste la sesión en `UserSession`.
-3. **Ruteo por rol:** Según rol almacenado, la navegación dirige a `AdminHome`, `AlumnoHome` o futuras pantallas de docente.
-4. **Gestión de datos:** Las pantallas invocan ViewModels → UseCases → Repositories → DAOs → `AppDatabase` para listar, crear o actualizar entidades.
-5. **Persistencia de cambios:** Las operaciones insertan/actualizan filas en SQLite a través de los DAOs y refrescan los `StateFlow` de los ViewModels correspondientes.
-6. **Inicialización de datos:** Al crear la base de datos por primera vez, `DatabaseSeeder` inserta automáticamente datos de prueba (10 usuarios, 20 materias, 20 grupos, 38 horarios, 21 inscripciones, 34 asistencias).
+
+### Flujo de inicio y autenticación
+
+1. **Inicio de la aplicación:**
+   - `MainActivity` carga `AppNavHost`
+   - `AppNavHost` verifica si hay sesión activa en `UserSession`
+   - Si hay sesión → Redirige según rol (Admin/Alumno/Docente)
+   - Si no hay sesión → Muestra `LoginScreen`
+
+2. **Proceso de autenticación:**
+   ```
+   LoginScreen
+     ↓ (Usuario ingresa credenciales)
+   VMLogin.login(username, password)
+     ↓ (Cambia estado a Loading)
+   UsuarioCU.validarUsuario(username, password)
+     ↓ (Valida campos no vacíos)
+   UsuarioRepository.validarUsuario(...)
+     ↓ (Delega al DAO)
+   UsuarioDao.validarUsuario(...)
+     ↓ (Consulta SQLite)
+   AppDatabase.writableDatabase.rawQuery(...)
+     ↓ (Retorna Usuario o null)
+   VMLogin recibe resultado
+     ├─> Si válido: UserSession.saveUser() → Estado Success → onLoginSuccess()
+     └─> Si inválido: Estado Error → Muestra mensaje
+   ```
+
+3. **Ruteo por rol:**
+   - `AppNavHost` lee `UserSession.getUserRol()`
+   - **Admin** → `AdminHome` → Acceso a todas las pantallas de gestión
+   - **Alumno** → `AlumnoHome` → Acceso a inscripciones y asistencias
+   - **Docente** → `DocenteHome` → (Pendiente de implementar)
+
+### Flujo de gestión de datos (CRUD)
+
+**Ejemplo: Agregar una materia**
+
+```
+PMateria.kt (UI)
+  ↓ Usuario completa formulario y hace clic en "Agregar"
+VMMateria.agregarMateria(nombre, sigla, nivel)
+  ↓ Cambia uiState a Loading
+MateriaCU.agregarMateria(...)
+  ↓ Valida datos (Validators.isNotEmpty, Validators.hasMinLength, etc.)
+  ↓ Verifica sigla única (regla de negocio)
+MateriaRepository.agregar(...)
+  ↓ Delega al DAO
+MateriaDao.insertar(...)
+  ↓ Ejecuta SQL INSERT
+AppDatabase.writableDatabase.execSQL(...)
+  ↓ SQLite guarda el registro
+VMMateria recibe ValidationResult.Success
+  ↓ Llama a recargar() → Actualiza StateFlow de materias
+  ↓ Cambia uiState a Success con mensaje
+PMateria.kt detecta cambio en StateFlow
+  ↓ Actualiza lista de materias automáticamente
+  ↓ Muestra Snackbar con mensaje de éxito
+```
+
+**Características del flujo:**
+- **Unidireccional:** Datos fluyen en una sola dirección
+- **Reactivo:** UI se actualiza automáticamente cuando cambian los StateFlow
+- **Validado:** Cada capa valida según su responsabilidad
+- **Manejo de errores:** Errores se propagan y se muestran en la UI
+- **Estados de carga:** UI muestra indicadores durante operaciones
+
+### Inicialización de datos
+
+Al crear la base de datos por primera vez:
+1. `AppDatabase.onCreate()` se ejecuta
+2. `DatabaseMigrations.createTables()` crea todas las tablas
+3. `DatabaseSeeder.seed()` inserta datos de prueba:
+   - 10 usuarios (3 alumnos, 5 docentes, 2 admins)
+   - 20 materias de diferentes niveles
+   - 20 grupos relacionando materias con docentes
+   - 38 horarios distribuidos en la semana
+   - 21 inscripciones (alumnos en grupos)
+   - 34 asistencias registradas
 
 ## Patrones de diseño implementados
 
@@ -530,16 +1033,26 @@ Incluye materias de diferentes niveles académicos:
 - **Datos:** Arquitectura completa con Singleton, DAOs separados por entidad, Repositories que abstraen el acceso, y separación clara entre migraciones, seeders y acceso a datos. Falta implementar manejo de errores robusto y migración a Room para mejor seguridad de threads.
 
 ## Oportunidades de mejora
-- ✅ **Completado:** Introducir repositorios e inyección de dependencias (p. ej. Hilt) para desacoplar casos de uso de SQLite.
-- ✅ **Completado:** Separar responsabilidades en DatabaseMigrations, DatabaseSeeder y AppDatabase.
-- ✅ **Completado:** Implementar patrón Singleton en AppDatabase.
-- ✅ **Completado:** Crear DAOs separados por entidad.
-- Corregir `UserSession.getUserRol()` para devolver el rol y no el nombre almacenado.
-- Introducir inyección de dependencias (Hilt) para eliminar dependencias manuales en ViewModels.
-- Migrar `AppDatabase` a Room para ganar seguridad en el acceso a datos y migraciones automáticas.
-- Aplicar encriptado/Hash a contraseñas y separar datos sensibles de la app cliente.
-- Completar la capa remota mediante Retrofit, sincronizando datos locales/remotos y habilitando pruebas unitarias con fuentes simuladas.
-- Añadir pruebas instrumentadas de navegación y validación de flujos críticos (login, inscripción, asistencia).
-- Actualizar pantallas y ViewModels para usar la nueva arquitectura (Repositories en lugar de AppDatabase directo).
+
+### ✅ Completado
+- ✅ Introducir repositorios e inyección de dependencias (p. ej. Hilt) para desacoplar casos de uso de SQLite
+- ✅ Separar responsabilidades en DatabaseMigrations, DatabaseSeeder y AppDatabase
+- ✅ Implementar patrón Singleton en AppDatabase
+- ✅ Crear DAOs separados por entidad
+- ✅ Corregir `UserSession.getUserRol()` para devolver el rol correcto
+- ✅ Actualizar pantallas y ViewModels para usar la nueva arquitectura (Repositories en lugar de AppDatabase directo)
+- ✅ Implementar UI State Management en todos los ViewModels (sealed classes para estados)
+- ✅ Agregar validaciones en UseCases con `ValidationResult`
+- ✅ Crear `Validators` utility para validaciones reutilizables
+
+### Pendiente
+- Introducir inyección de dependencias (Hilt) para eliminar dependencias manuales en ViewModels y UseCases
+- Migrar `AppDatabase` a Room para ganar seguridad en el acceso a datos y migraciones automáticas
+- Aplicar encriptado/Hash a contraseñas y separar datos sensibles de la app cliente
+- Completar la capa remota mediante Retrofit, sincronizando datos locales/remotos y habilitando pruebas unitarias con fuentes simuladas
+- Añadir pruebas instrumentadas de navegación y validación de flujos críticos (login, inscripción, asistencia)
+- Implementar vista del docente con funcionalidades específicas
+- Mejorar diseños de pantallas con Material Design 3 más completo
+- Agregar manejo de errores más robusto con retry y logging
 
 
