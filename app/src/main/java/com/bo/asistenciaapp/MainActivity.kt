@@ -11,7 +11,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
-import com.bo.asistenciaapp.presentation.admin.navigation.AppNavHost
+import com.bo.asistenciaapp.presentation.common.navigation.AppNavHost
 import com.bo.asistenciaapp.presentation.login.LoginScreen
 import com.bo.asistenciaapp.ui.theme.AsistenciaAppTheme
 

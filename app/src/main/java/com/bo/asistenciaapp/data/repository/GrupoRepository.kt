@@ -57,6 +57,16 @@ class GrupoRepository(private val database: AppDatabase) {
     }
     
     /**
+     * Obtiene todos los grupos asignados a un docente específico.
+     * 
+     * @param docenteId ID del docente
+     * @return Lista de grupos asignados al docente
+     */
+    fun obtenerPorDocente(docenteId: Int): List<Grupo> {
+        return database.grupoDao.obtenerPorDocente(docenteId)
+    }
+    
+    /**
      * Elimina un grupo del sistema.
      * 
      * @param id ID del grupo a eliminar

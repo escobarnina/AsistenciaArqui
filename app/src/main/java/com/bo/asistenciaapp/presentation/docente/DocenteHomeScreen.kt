@@ -1,4 +1,4 @@
-package com.bo.asistenciaapp.presentation.alumno
+package com.bo.asistenciaapp.presentation.docente
 
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
@@ -6,15 +6,22 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
-import androidx.navigation.NavHostController
 import com.bo.asistenciaapp.presentation.common.HomeLayout
 
+/**
+ * Pantalla principal del docente.
+ * 
+ * Muestra las opciones disponibles para el docente:
+ * - Ver sus grupos asignados
+ * - Marcar asistencias de estudiantes
+ * - Ver estadísticas de asistencia
+ */
 @Composable
-fun AlumnoHomeScreen(
-    navController: NavHostController,
-    onLogout:() -> Unit,
-    onGestionarInscripciones:() -> Unit,
-){
+fun DocenteHomeScreen(
+    onLogout: () -> Unit,
+    onVerGrupos: () -> Unit,
+    onMarcarAsistencias: () -> Unit
+) {
     HomeLayout { paddingValues ->
         Column(
             modifier = Modifier
@@ -25,7 +32,7 @@ fun AlumnoHomeScreen(
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             Text(
-                text = "Panel del Estudiante",
+                text = "Panel del Docente",
                 style = MaterialTheme.typography.headlineMedium
             )
             
@@ -36,19 +43,19 @@ fun AlumnoHomeScreen(
             )
             
             HorizontalDivider(modifier = Modifier.padding(vertical = 12.dp))
-
+            
             Button(
-                onClick = onGestionarInscripciones,
+                onClick = onVerGrupos,
                 modifier = Modifier.fillMaxWidth()
             ) {
-                Text("Gestionar Inscripciones")
+                Text("Mis Grupos")
             }
             
             Button(
-                onClick = { navController.navigate("gestionarAsistencias") },
+                onClick = onMarcarAsistencias,
                 modifier = Modifier.fillMaxWidth()
             ) {
-                Text("Marcar Asistencia")
+                Text("Marcar Asistencias")
             }
             
             HorizontalDivider(modifier = Modifier.padding(vertical = 12.dp))
@@ -62,3 +69,4 @@ fun AlumnoHomeScreen(
         }
     }
 }
+

@@ -3,6 +3,7 @@ package com.bo.asistenciaapp.data.local.dao
 import android.database.sqlite.SQLiteDatabase
 import com.bo.asistenciaapp.data.local.StringRange
 import com.bo.asistenciaapp.domain.model.Boleta
+import com.bo.asistenciaapp.domain.model.Usuario
 
 /**
  * Data Access Object para operaciones relacionadas con inscripciones (boletas).
@@ -115,6 +116,43 @@ class InscripcionDao(private val database: SQLiteDatabase) {
             }
         }
         return false
+    }
+    
+    /**
+     * Obtiene todos los estudiantes inscritos en un grupo específico.
+     */
+    fun obtenerEstudiantesPorGrupo(grupoId: Int): List<Usuario> {
+        val lista = mutableListOf<Usuario>()
+        database.rawQuery(
+            """
+                SELECT DISTINCT
+                u.id, 
+                u.nombres, 
+                u.apellidos, 
+                u.registro, 
+                u.rol, 
+                u.username
+                FROM usuarios u
+                INNER JOIN boletas b ON b.alumno_id = u.id
+                WHERE b.grupo_id = ? AND u.rol = 'Alumno'
+                ORDER BY u.apellidos, u.nombres
+            """.trimIndent(),
+            arrayOf(grupoId.toString())
+        ).use { c ->
+            while (c.moveToNext()) {
+                lista.add(
+                    Usuario(
+                        id = c.getInt(0),
+                        nombres = c.getString(1),
+                        apellidos = c.getString(2),
+                        registro = c.getString(3),
+                        rol = c.getString(4),
+                        username = c.getString(5)
+                    )
+                )
+            }
+        }
+        return lista
     }
 }
 

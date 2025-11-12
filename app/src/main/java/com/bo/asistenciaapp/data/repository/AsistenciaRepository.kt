@@ -45,5 +45,26 @@ class AsistenciaRepository(private val database: AppDatabase) {
     fun puedeMarcarAsistencia(alumnoId: Int, grupoId: Int): Boolean {
         return database.asistenciaDao.puedeMarcarAsistencia(alumnoId, grupoId)
     }
+    
+    /**
+     * Obtiene todas las asistencias de un grupo específico.
+     * 
+     * @param grupoId ID del grupo
+     * @return Lista de asistencias del grupo
+     */
+    fun obtenerPorGrupo(grupoId: Int): List<Asistencia> {
+        return database.asistenciaDao.obtenerPorGrupo(grupoId)
+    }
+    
+    /**
+     * Obtiene las asistencias de un estudiante en un grupo específico.
+     * 
+     * @param alumnoId ID del alumno
+     * @param grupoId ID del grupo
+     * @return Lista de asistencias del alumno en el grupo
+     */
+    fun obtenerPorAlumnoYGrupo(alumnoId: Int, grupoId: Int): List<Asistencia> {
+        return database.asistenciaDao.obtenerPorAlumnoYGrupo(alumnoId, grupoId)
+    }
 }
 

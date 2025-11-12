@@ -46,5 +46,15 @@ class InscripcionRepository(private val database: AppDatabase) {
     fun tieneCruceDeHorario(alumnoId: Int, grupoId: Int): Boolean {
         return database.inscripcionDao.tieneCruceDeHorario(alumnoId, grupoId)
     }
+    
+    /**
+     * Obtiene todos los estudiantes inscritos en un grupo específico.
+     * 
+     * @param grupoId ID del grupo
+     * @return Lista de estudiantes inscritos en el grupo
+     */
+    fun obtenerEstudiantesPorGrupo(grupoId: Int): List<com.bo.asistenciaapp.domain.model.Usuario> {
+        return database.inscripcionDao.obtenerEstudiantesPorGrupo(grupoId)
+    }
 }
 

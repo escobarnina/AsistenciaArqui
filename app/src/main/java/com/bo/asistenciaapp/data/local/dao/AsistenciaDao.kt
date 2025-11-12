@@ -79,5 +79,81 @@ class AsistenciaDao(private val database: SQLiteDatabase) {
             return c.moveToFirst()
         }
     }
+    
+    /**
+     * Obtiene todas las asistencias de un grupo específico.
+     */
+    fun obtenerPorGrupo(grupoId: Int): List<Asistencia> {
+        val lista = mutableListOf<Asistencia>()
+        database.rawQuery(
+            """
+                SELECT 
+                a.id, 
+                a.alumno_id, 
+                a.grupo_id, 
+                a.fecha,
+                g.grupo,
+                g.materia_nombre
+                FROM 
+                asistencias a 
+                JOIN grupos g ON a.grupo_id = g.id
+                WHERE a.grupo_id = ?
+                ORDER BY a.fecha DESC
+            """.trimIndent(),
+            arrayOf(grupoId.toString())
+        ).use { c ->
+            while (c.moveToNext()) {
+                lista.add(
+                    Asistencia(
+                        id = c.getInt(0),
+                        alumnoId = c.getInt(1),
+                        grupoId = c.getInt(2),
+                        fecha = c.getString(3),
+                        grupo = c.getString(4),
+                        materiaNombre = c.getString(5)
+                    )
+                )
+            }
+        }
+        return lista
+    }
+    
+    /**
+     * Obtiene las asistencias de un estudiante en un grupo específico.
+     */
+    fun obtenerPorAlumnoYGrupo(alumnoId: Int, grupoId: Int): List<Asistencia> {
+        val lista = mutableListOf<Asistencia>()
+        database.rawQuery(
+            """
+                SELECT 
+                a.id, 
+                a.alumno_id, 
+                a.grupo_id, 
+                a.fecha,
+                g.grupo,
+                g.materia_nombre
+                FROM 
+                asistencias a 
+                JOIN grupos g ON a.grupo_id = g.id
+                WHERE a.alumno_id = ? AND a.grupo_id = ?
+                ORDER BY a.fecha DESC
+            """.trimIndent(),
+            arrayOf(alumnoId.toString(), grupoId.toString())
+        ).use { c ->
+            while (c.moveToNext()) {
+                lista.add(
+                    Asistencia(
+                        id = c.getInt(0),
+                        alumnoId = c.getInt(1),
+                        grupoId = c.getInt(2),
+                        fecha = c.getString(3),
+                        grupo = c.getString(4),
+                        materiaNombre = c.getString(5)
+                    )
+                )
+            }
+        }
+        return lista
+    }
 }
 

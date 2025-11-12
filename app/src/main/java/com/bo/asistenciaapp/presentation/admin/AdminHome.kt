@@ -6,7 +6,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
-
+import com.bo.asistenciaapp.presentation.common.HomeLayout
 
 @Composable
 fun AdminHomeScreen(
@@ -17,33 +17,67 @@ fun AdminHomeScreen(
     onGestionarHorarios:() -> Unit,
     onGestionarInscripciones:() -> Unit
 ) {
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(24.dp),
-        verticalArrangement = Arrangement.spacedBy(16.dp, Alignment.CenterVertically),
-        horizontalAlignment = Alignment.CenterHorizontally
-    ) {
-        Text("Panel de Administracion", style = MaterialTheme.typography.headlineSmall)
+    HomeLayout { paddingValues ->
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(paddingValues)
+                .padding(24.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp, Alignment.CenterVertically),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            Text(
+                text = "Panel de Administración",
+                style = MaterialTheme.typography.headlineMedium
+            )
+            
+            Text(
+                text = "Bienvenido",
+                style = MaterialTheme.typography.bodyLarge,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
 
-        Button(onClick = onGestionarUsuarios, modifier = Modifier.fillMaxWidth()) {
-            Text("Gestion de Usuarios")
-        }
-        Button(onClick = onGestionarMaterias, modifier = Modifier.fillMaxWidth()) {
-            Text("Gestion de Materias")
-        }
-        Button(onClick = onGestionarGrupos, modifier = Modifier.fillMaxWidth()) {
-            Text("Gestion de Grupos")
-        }
-        Button(onClick = onGestionarHorarios, modifier = Modifier.fillMaxWidth()) {
-            Text("Gestion de Horarios")
-        }
-        Button(onClick = onGestionarInscripciones, modifier = Modifier.fillMaxWidth()) {
-            Text("Gestion de Inscripciones")
-        }
-        HorizontalDivider(modifier = Modifier.padding(vertical = 12.dp))
-        OutlinedButton(onClick = onLogout, modifier = Modifier.fillMaxWidth()) {
-            Text("Cerrar sesion")
+            HorizontalDivider(modifier = Modifier.padding(vertical = 12.dp))
+
+            Button(
+                onClick = onGestionarUsuarios,
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Text("Gestión de Usuarios")
+            }
+            Button(
+                onClick = onGestionarMaterias,
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Text("Gestión de Materias")
+            }
+            Button(
+                onClick = onGestionarGrupos,
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Text("Gestión de Grupos")
+            }
+            Button(
+                onClick = onGestionarHorarios,
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Text("Gestión de Horarios")
+            }
+            Button(
+                onClick = onGestionarInscripciones,
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Text("Gestión de Inscripciones")
+            }
+            
+            HorizontalDivider(modifier = Modifier.padding(vertical = 12.dp))
+            
+            OutlinedButton(
+                onClick = onLogout,
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Text("Cerrar sesión")
+            }
         }
     }
 }

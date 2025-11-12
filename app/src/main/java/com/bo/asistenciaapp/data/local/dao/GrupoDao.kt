@@ -68,6 +68,35 @@ class GrupoDao(private val database: SQLiteDatabase) {
     }
     
     /**
+     * Obtiene todos los grupos asignados a un docente específico.
+     */
+    fun obtenerPorDocente(docenteId: Int): List<Grupo> {
+        val lista = mutableListOf<Grupo>()
+        database.rawQuery(
+            "SELECT id, materia_id, materia_nombre, docente_id, docente_nombre, semestre, gestion, capacidad, nro_inscritos, grupo FROM grupos WHERE docente_id=?",
+            arrayOf(docenteId.toString())
+        ).use { c ->
+            while (c.moveToNext()) {
+                lista.add(
+                    Grupo(
+                        id = c.getInt(0),
+                        materiaId = c.getInt(1),
+                        materiaNombre = c.getString(2),
+                        docenteId = c.getInt(3),
+                        docenteNombre = c.getString(4),
+                        semestre = c.getInt(5),
+                        gestion = c.getInt(6),
+                        capacidad = c.getInt(7),
+                        nroInscritos = c.getInt(8),
+                        grupo = c.getString(9)
+                    )
+                )
+            }
+        }
+        return lista
+    }
+    
+    /**
      * Elimina un grupo por ID.
      */
     fun eliminar(id: Int) {
