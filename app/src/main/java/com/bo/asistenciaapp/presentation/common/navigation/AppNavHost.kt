@@ -7,6 +7,7 @@ import androidx.navigation.NavGraphBuilder
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import androidx.navigation.navOptions
 import com.bo.asistenciaapp.data.local.UserSession
 import com.bo.asistenciaapp.presentation.admin.AdminHomeScreen
 import com.bo.asistenciaapp.presentation.admin.GestionarGruposScreen
@@ -282,6 +283,7 @@ private fun navigateToRoleHome(
  * Maneja el proceso de logout del usuario.
  * 
  * Limpia la sesión y navega de vuelta a la pantalla de login.
+ * Limpia todo el back stack para evitar que el usuario pueda volver atrás.
  * 
  * @param navController Controlador de navegación
  * @param session Sesión del usuario
@@ -291,7 +293,16 @@ private fun handleLogout(
     session: UserSession
 ) {
     session.clear()
-    navController.popBackStack(NavRoutes.Login, inclusive = false)
+    // Limpiar todo el back stack y navegar a Login
+    // Usamos popUpTo con el startDestination para limpiar todo el stack
+    navController.navigate(NavRoutes.Login) {
+        // Limpiar todo el back stack hasta Login (inclusive)
+        popUpTo(NavRoutes.Login) { inclusive = true }
+        // Evitar múltiples instancias de Login en el stack
+        launchSingleTop = true
+        // Limpiar el back stack completamente
+        restoreState = false
+    }
 }
 
 // ============================================================================

@@ -21,9 +21,7 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
         setContent {
             AsistenciaAppTheme {
-                setContent {
-                    AppNavHost()
-                }
+                AppNavHost()
             }
         }
     }
