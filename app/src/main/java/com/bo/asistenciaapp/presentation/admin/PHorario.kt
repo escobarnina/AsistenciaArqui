@@ -10,8 +10,15 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import com.bo.asistenciaapp.data.local.AppDatabase
+import com.bo.asistenciaapp.data.repository.GrupoRepository
+import com.bo.asistenciaapp.data.repository.HorarioRepository
 import com.bo.asistenciaapp.domain.model.Grupo
+import com.bo.asistenciaapp.domain.usecase.GrupoCU
+import com.bo.asistenciaapp.domain.usecase.HorarioCU
+import com.bo.asistenciaapp.domain.viewmodel.HorarioUiState
+import com.bo.asistenciaapp.domain.viewmodel.VMHorario
 import kotlinx.coroutines.launch
 import kotlin.text.isNotBlank
 import androidx.compose.material.icons.Icons
@@ -22,13 +29,40 @@ import com.bo.asistenciaapp.domain.model.Horario
 @Composable
 fun GestionarHorarios(onBack: () -> Unit) {
     val context = LocalContext.current
-    val db = remember { AppDatabase(context) }
-
-    var horarios by remember { mutableStateOf(db.obtenerHorarios()) }
-    var grupos by remember { mutableStateOf(db.obtenerGrupos()) }
+    
+    // Inicializar dependencias
+    val database = remember { AppDatabase.getInstance(context) }
+    val horarioRepository = remember { HorarioRepository(database) }
+    val grupoRepository = remember { GrupoRepository(database) }
+    val horarioCU = remember { HorarioCU(horarioRepository) }
+    val grupoCU = remember { GrupoCU(grupoRepository) }
+    
+    // ViewModel
+    val viewModel: VMHorario = viewModel {
+        VMHorario(horarioCU, grupoCU)
+    }
+    
+    val horarios by viewModel.horarios.collectAsState()
+    val grupos by viewModel.grupos.collectAsState()
+    val uiState by viewModel.uiState.collectAsState()
 
     val snackbar = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
+    
+    // Manejar estados del ViewModel
+    LaunchedEffect(uiState) {
+        when (val state = uiState) {
+            is HorarioUiState.Success -> {
+                if (state.mensaje != null) {
+                    scope.launch { snackbar.showSnackbar(state.mensaje) }
+                }
+            }
+            is HorarioUiState.Error -> {
+                scope.launch { snackbar.showSnackbar(state.mensaje) }
+            }
+            else -> {}
+        }
+    }
 
     // Campos del formulario
     var grupoSeleccionado by remember { mutableStateOf<Grupo?>(null) }
@@ -130,24 +164,28 @@ fun GestionarHorarios(onBack: () -> Unit) {
             )
 
             Spacer(Modifier.height(8.dp))
-            Button(onClick = {
-                if (grupoSeleccionado != null && horaInicio.isNotBlank() && horaFin.isNotBlank()) {
-                    try {
-                        db.agregarHorario(
+            Button(
+                onClick = {
+                    if (grupoSeleccionado != null && horaInicio.isNotBlank() && horaFin.isNotBlank()) {
+                        viewModel.agregarHorario(
                             grupoSeleccionado!!.id,
                             diaSeleccionado,
                             horaInicio,
                             horaFin
                         )
-                        horarios = db.obtenerHorarios()
-//                        horaInicio = ""; horaFin = ""
-                        scope.launch { snackbar.showSnackbar("Horario agregado correctamente") }
-                    } catch (e: Exception) {
+                        horaInicio = ""; horaFin = ""
+                    } else {
                         scope.launch { snackbar.showSnackbar("Complete todos los campos") }
                     }
+                },
+                enabled = uiState !is HorarioUiState.Loading,
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                if (uiState is HorarioUiState.Loading) {
+                    CircularProgressIndicator(modifier = Modifier.size(16.dp))
+                } else {
+                    Text("Agregar Horario")
                 }
-            }, Modifier.fillMaxWidth()) {
-                Text("Agregar Horario")
             }
             OutlinedButton(onClick = onBack, Modifier.fillMaxWidth()) {
                 Text("Volver")
@@ -161,11 +199,10 @@ fun GestionarHorarios(onBack: () -> Unit) {
                         horizontalArrangement = Arrangement.SpaceBetween
                     ) {
                         Text("${h.materia} ${h.grupo} - ${h.dia} ${h.horaInicio} - ${h.horaFin}")
-                        IconButton(onClick = {
-                            db.eliminarHorario(h.id)
-                            horarios = db.obtenerHorarios()
-                            scope.launch { snackbar.showSnackbar("Horario eliminado") }
-                        }) {
+                        IconButton(
+                            onClick = { viewModel.eliminarHorario(h.id) },
+                            enabled = uiState !is HorarioUiState.Loading
+                        ) {
                             Icon(Icons.Default.Delete, contentDescription = "Eliminar")
                         }
                     }

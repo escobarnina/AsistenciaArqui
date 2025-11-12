@@ -12,7 +12,15 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import com.bo.asistenciaapp.data.local.AppDatabase
+import com.bo.asistenciaapp.data.repository.GrupoRepository
+import com.bo.asistenciaapp.data.repository.InscripcionRepository
+import com.bo.asistenciaapp.domain.model.Boleta
+import com.bo.asistenciaapp.domain.usecase.GrupoCU
+import com.bo.asistenciaapp.domain.usecase.InscripcionCU
+import com.bo.asistenciaapp.domain.viewmodel.InscripcionUiState
+import com.bo.asistenciaapp.domain.viewmodel.VMInscripcion
 import kotlinx.coroutines.launch
 import kotlin.text.isNotBlank
 import java.text.SimpleDateFormat
@@ -26,13 +34,40 @@ fun GestionarInscripciones(
     gestionActual: Int,
     onBack: () -> Unit) {
     val context = LocalContext.current
-    val db = remember { AppDatabase(context) }
-
-    var grupos by remember { mutableStateOf(db.obtenerGrupos()) }
-    var boletas by remember { mutableStateOf(db.obtenerBoletasPorAlumno(alumnoId)) }
+    
+    // Inicializar dependencias
+    val database = remember { AppDatabase.getInstance(context) }
+    val inscripcionRepository = remember { InscripcionRepository(database) }
+    val grupoRepository = remember { GrupoRepository(database) }
+    val inscripcionCU = remember { InscripcionCU(inscripcionRepository) }
+    val grupoCU = remember { GrupoCU(grupoRepository) }
+    
+    // ViewModel
+    val viewModel: VMInscripcion = viewModel {
+        VMInscripcion(inscripcionCU, grupoCU, alumnoId)
+    }
+    
+    val grupos by viewModel.grupos.collectAsState()
+    val boletas by viewModel.boletas.collectAsState()
+    val uiState by viewModel.uiState.collectAsState()
 
     val snackbar = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
+    
+    // Manejar estados del ViewModel
+    LaunchedEffect(uiState) {
+        when (val state = uiState) {
+            is InscripcionUiState.Success -> {
+                if (state.mensaje != null) {
+                    scope.launch { snackbar.showSnackbar(state.mensaje) }
+                }
+            }
+            is InscripcionUiState.Error -> {
+                scope.launch { snackbar.showSnackbar(state.mensaje) }
+            }
+            else -> {}
+        }
+    }
 
     Scaffold(snackbarHost = { SnackbarHost(snackbar) }) { padding ->
         Column(
@@ -53,28 +88,19 @@ fun GestionarInscripciones(
                         horizontalArrangement = Arrangement.SpaceBetween
                     ) {
                         Text("${g.materiaNombre} ${g.grupo} - Docente ${g.docenteNombre}")
-                        Button(onClick = {
-                            try {
-                                if (db.tieneCruceDeHorario(alumnoId, g.id)) {
-                                    scope.launch {
-                                        snackbar.showSnackbar("Cruce de horario detectado")
-                                    }
-                                } else {
-                                    val fecha = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
-                                        .format(Date())
-                                    db.registrarBoleta(alumnoId, g.id, fecha, semestreActual, gestionActual)
-                                    boletas = db.obtenerBoletasPorAlumno(alumnoId)
-                                    scope.launch {
-                                        snackbar.showSnackbar("Inscripción realizada")
-                                    }
-                                }
-                            } catch (e: Exception) {
-                                scope.launch {
-                                    snackbar.showSnackbar("Error: ${e.message}")
-                                }
+                        Button(
+                            onClick = {
+                                val fecha = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
+                                    .format(Date())
+                                viewModel.registrarInscripcion(g.id, fecha, semestreActual, gestionActual)
+                            },
+                            enabled = uiState !is InscripcionUiState.Loading
+                        ) {
+                            if (uiState is InscripcionUiState.Loading) {
+                                CircularProgressIndicator(modifier = Modifier.size(16.dp))
+                            } else {
+                                Text("Inscribirse")
                             }
-                        }) {
-                            Text("Inscribirse")
                         }
                     }
                     Divider()
@@ -83,8 +109,10 @@ fun GestionarInscripciones(
 
             Spacer(Modifier.height(16.dp))
             Text("Boleta de inscripcion", style = MaterialTheme.typography.titleMedium)
-            boletas.forEach { b ->
-                Text("${b.materiaNombre} ${b.grupo} - ${b.dia} (${b.horario})")
+            LazyColumn {
+                items(boletas) { b ->
+                    Text("${b.materiaNombre} ${b.grupo} - ${b.dia} (${b.horario})")
+                }
             }
 
             Spacer(Modifier.height(16.dp))

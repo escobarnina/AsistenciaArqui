@@ -12,8 +12,17 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import com.bo.asistenciaapp.data.local.AppDatabase
 import com.bo.asistenciaapp.data.local.UserSession
+import com.bo.asistenciaapp.data.repository.AsistenciaRepository
+import com.bo.asistenciaapp.data.repository.GrupoRepository
+import com.bo.asistenciaapp.data.repository.InscripcionRepository
+import com.bo.asistenciaapp.domain.usecase.AsistenciaCU
+import com.bo.asistenciaapp.domain.usecase.GrupoCU
+import com.bo.asistenciaapp.domain.usecase.InscripcionCU
+import com.bo.asistenciaapp.domain.viewmodel.AsistenciaUiState
+import com.bo.asistenciaapp.domain.viewmodel.VMAsistencia
 import kotlinx.coroutines.launch
 import kotlin.text.isNotBlank
 import java.text.SimpleDateFormat
@@ -24,15 +33,43 @@ import java.util.*
 fun GestionarAsistencia(onBack: () -> Unit) {
     val context = LocalContext.current
     val session = remember { UserSession(context) }
-    val db = remember { AppDatabase(context) }
+    val alumnoId = session.getUserId()
+    
+    // Inicializar dependencias
+    val database = remember { AppDatabase.getInstance(context) }
+    val asistenciaRepository = remember { AsistenciaRepository(database) }
+    val inscripcionRepository = remember { InscripcionRepository(database) }
+    val grupoRepository = remember { GrupoRepository(database) }
+    val asistenciaCU = remember { AsistenciaCU(asistenciaRepository) }
+    val inscripcionCU = remember { InscripcionCU(inscripcionRepository) }
+    val grupoCU = remember { GrupoCU(grupoRepository) }
+    
+    // ViewModel
+    val viewModel: VMAsistencia = viewModel {
+        VMAsistencia(asistenciaCU, inscripcionCU, grupoCU, alumnoId)
+    }
+    
+    val grupos by viewModel.grupos.collectAsState()
+    val asistencias by viewModel.asistencias.collectAsState()
+    val uiState by viewModel.uiState.collectAsState()
+    
     val scope = rememberCoroutineScope()
     val snackbar = remember { SnackbarHostState() }
-
-    val alumnoId = session.getUserId()
-
-    // grupos en los que está inscrito
-    var misGrupos by remember { mutableStateOf(db.obtenerAsistenciasPorAlumno(alumnoId)) }
-    var misAsistencias by remember { mutableStateOf(db.obtenerAsistenciasPorAlumno(alumnoId)) }
+    
+    // Manejar estados del ViewModel
+    LaunchedEffect(uiState) {
+        when (val state = uiState) {
+            is AsistenciaUiState.Success -> {
+                if (state.mensaje != null) {
+                    scope.launch { snackbar.showSnackbar(state.mensaje) }
+                }
+            }
+            is AsistenciaUiState.Error -> {
+                scope.launch { snackbar.showSnackbar(state.mensaje) }
+            }
+            else -> {}
+        }
+    }
 
     Scaffold(snackbarHost = { SnackbarHost(snackbar) }) { padding ->
         Column(
@@ -45,29 +82,26 @@ fun GestionarAsistencia(onBack: () -> Unit) {
             Spacer(Modifier.height(8.dp))
 
             LazyColumn {
-                items(misGrupos) { grupo ->
+                items(grupos) { grupo ->
                     Row(
                         Modifier
                             .fillMaxWidth()
                             .padding(vertical = 8.dp),
                         horizontalArrangement = Arrangement.SpaceBetween
                     ) {
-                        Text("Grupo ${grupo.materiaNombre} ${grupo.grupo}")
-                        Button(onClick = {
-                            val fecha = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(Date())
-                            if (db.puedeMarcarAsistencia(alumnoId, grupo.id)) {
-                                db.registrarAsistencia(alumnoId, grupo.id, fecha)
-                                misAsistencias = db.obtenerAsistenciasPorAlumno(alumnoId)
-                                scope.launch {
-                                    snackbar.showSnackbar("Asistencia registrada")
-                                }
+                        Text("${grupo.materiaNombre} - Grupo ${grupo.grupo}")
+                        Button(
+                            onClick = {
+                                val fecha = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(Date())
+                                viewModel.marcarAsistencia(grupo.id, fecha)
+                            },
+                            enabled = uiState !is AsistenciaUiState.Loading
+                        ) {
+                            if (uiState is AsistenciaUiState.Loading) {
+                                CircularProgressIndicator(modifier = Modifier.size(16.dp))
                             } else {
-                                scope.launch {
-                                    snackbar.showSnackbar("No puedes marcar: fuera de horario o no inscrito")
-                                }
+                                Text("Marcar")
                             }
-                        }) {
-                            Text("Marcar")
                         }
                     }
                     Divider()
@@ -76,8 +110,10 @@ fun GestionarAsistencia(onBack: () -> Unit) {
 
             Spacer(Modifier.height(16.dp))
             Text("Mis Asistencias", style = MaterialTheme.typography.titleMedium)
-            misAsistencias.forEach { a ->
-                Text("Grupo ${a.grupoId} - ${a.fecha}")
+            LazyColumn {
+                items(asistencias) { a ->
+                    Text("${a.materiaNombre} - ${a.grupo} - ${a.fecha}")
+                }
             }
 
             Spacer(Modifier.height(16.dp))

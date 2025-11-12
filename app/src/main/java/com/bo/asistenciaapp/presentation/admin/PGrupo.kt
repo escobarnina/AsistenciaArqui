@@ -12,10 +12,19 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import com.bo.asistenciaapp.data.local.AppDatabase
+import com.bo.asistenciaapp.data.repository.GrupoRepository
+import com.bo.asistenciaapp.data.repository.MateriaRepository
+import com.bo.asistenciaapp.data.repository.UsuarioRepository
 import com.bo.asistenciaapp.domain.model.Materia
 import com.bo.asistenciaapp.domain.model.Grupo
 import com.bo.asistenciaapp.domain.model.Usuario
+import com.bo.asistenciaapp.domain.usecase.GrupoCU
+import com.bo.asistenciaapp.domain.usecase.MateriaCU
+import com.bo.asistenciaapp.domain.usecase.UsuarioCU
+import com.bo.asistenciaapp.domain.viewmodel.GrupoUiState
+import com.bo.asistenciaapp.domain.viewmodel.VMGrupo
 import kotlinx.coroutines.launch
 import kotlin.text.isNotBlank
 
@@ -23,14 +32,44 @@ import kotlin.text.isNotBlank
 @Composable
 fun GestionarGruposScreen(onBack: () -> Unit) {
     val context = LocalContext.current
-    val db = remember { AppDatabase(context) }
-    var grupos by remember { mutableStateOf(db.obtenerGrupos()) }
-    var materias by remember { mutableStateOf(db.obtenerMaterias()) }
-    var docentes by remember { mutableStateOf(db.obtenerDocentes()) }
+    
+    // Inicializar dependencias
+    val database = remember { AppDatabase.getInstance(context) }
+    val grupoRepository = remember { GrupoRepository(database) }
+    val materiaRepository = remember { MateriaRepository(database) }
+    val usuarioRepository = remember { UsuarioRepository(database) }
+    val grupoCU = remember { GrupoCU(grupoRepository) }
+    val materiaCU = remember { MateriaCU(materiaRepository) }
+    val usuarioCU = remember { UsuarioCU(usuarioRepository) }
+    
+    // ViewModel
+    val viewModel: VMGrupo = viewModel {
+        VMGrupo(grupoCU, materiaCU, usuarioCU)
+    }
+    
+    val grupos by viewModel.grupos.collectAsState()
+    val materias by viewModel.materias.collectAsState()
+    val docentes by viewModel.docentes.collectAsState()
+    val uiState by viewModel.uiState.collectAsState()
 
     // snackbar
     val snackbarHostState = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
+    
+    // Manejar estados del ViewModel
+    LaunchedEffect(uiState) {
+        when (val state = uiState) {
+            is GrupoUiState.Success -> {
+                if (state.mensaje != null) {
+                    scope.launch { snackbarHostState.showSnackbar(state.mensaje) }
+                }
+            }
+            is GrupoUiState.Error -> {
+                scope.launch { snackbarHostState.showSnackbar(state.mensaje) }
+            }
+            else -> {}
+        }
+    }
 
 //    var docente by remember { mutableStateOf("") }
     var semestre by remember { mutableStateOf("") }
@@ -142,31 +181,32 @@ fun GestionarGruposScreen(onBack: () -> Unit) {
 
             Button(
                 onClick = {
-                    try {
-                        if (semestre.isNotBlank() && gestion.isNotBlank() && capacidad.isNotBlank()) {
-                            db.agregarGrupo(
-                                materiaSeleccionada!!.id,
-                                materiaSeleccionada!!.nombre,
-                                docenteSeleccionado!!.id,
-                                docenteSeleccionado!!.nombres,
-                                semestre.toInt(),
-                                gestion.toInt(),
-                                capacidad.toInt(),
-                                grupo
-                            )
-                            grupos = db.obtenerGrupos()
-                            semestre = "2"; gestion = "2025"; grupo = ""; capacidad = ""; materiaSeleccionada = null; docenteSeleccionado = null
-                            scope.launch { snackbarHostState.showSnackbar("Grupo registrada correctamente") }
-                        } else {
-                            scope.launch { snackbarHostState.showSnackbar("Completa todos los campos") }
-                        }
-                    } catch (e: Exception) {
-                        scope.launch { snackbarHostState.showSnackbar("Error: ${e.message}") }
+                    if (semestre.isNotBlank() && gestion.isNotBlank() && capacidad.isNotBlank() && 
+                        materiaSeleccionada != null && docenteSeleccionado != null && grupo.isNotBlank()) {
+                        viewModel.agregarGrupo(
+                            materiaSeleccionada!!.id,
+                            materiaSeleccionada!!.nombre,
+                            docenteSeleccionado!!.id,
+                            "${docenteSeleccionado!!.nombres} ${docenteSeleccionado!!.apellidos}",
+                            semestre.toInt(),
+                            gestion.toInt(),
+                            capacidad.toInt(),
+                            grupo
+                        )
+                        semestre = ""; gestion = ""; grupo = ""; capacidad = ""; 
+                        materiaSeleccionada = null; docenteSeleccionado = null
+                    } else {
+                        scope.launch { snackbarHostState.showSnackbar("Completa todos los campos") }
                     }
                 },
+                enabled = uiState !is GrupoUiState.Loading,
                 modifier = Modifier.fillMaxWidth()
             ) {
-                Text("Agregar Grupo")
+                if (uiState is GrupoUiState.Loading) {
+                    CircularProgressIndicator(modifier = Modifier.size(16.dp))
+                } else {
+                    Text("Agregar Grupo")
+                }
             }
             OutlinedButton(onClick = onBack, modifier = Modifier.fillMaxWidth()) {
                 Text("Volver")
@@ -191,15 +231,10 @@ fun GestionarGruposScreen(onBack: () -> Unit) {
                         horizontalArrangement = Arrangement.SpaceBetween
                     ) {
                         Text("${g.materiaNombre}, Grupo ${g.grupo} - ${g.docenteNombre}")
-                        IconButton(onClick = {
-                            try {
-                                db.eliminarGrupo(g.id)
-                                grupos = db.obtenerGrupos()
-                                scope.launch { snackbarHostState.showSnackbar("Grupo eliminado") }
-                            } catch (e: Exception) {
-                                scope.launch { snackbarHostState.showSnackbar("Error: ${e.message}") }
-                            }
-                        }) {
+                        IconButton(
+                            onClick = { viewModel.eliminarGrupo(g.id) },
+                            enabled = uiState !is GrupoUiState.Loading
+                        ) {
                             Icon(Icons.Default.Delete, "Eliminar")
                         }
                     }
