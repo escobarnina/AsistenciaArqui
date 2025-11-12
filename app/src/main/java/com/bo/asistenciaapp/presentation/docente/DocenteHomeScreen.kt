@@ -1,10 +1,15 @@
 package com.bo.asistenciaapp.presentation.docente
 
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.bo.asistenciaapp.presentation.common.HomeLayout
 
@@ -14,7 +19,15 @@ import com.bo.asistenciaapp.presentation.common.HomeLayout
  * Muestra las opciones disponibles para el docente:
  * - Ver sus grupos asignados
  * - Marcar asistencias de estudiantes
- * - Ver estadísticas de asistencia
+ * 
+ * Arquitectura: Componentes organizados siguiendo principios de Atomic Design
+ * - Atoms: Elementos básicos (Iconos, Textos)
+ * - Molecules: Componentes compuestos (Botones de acción, Cards)
+ * - Organisms: Secciones completas (Header, Menu de opciones)
+ * 
+ * @param onLogout Callback cuando se presiona cerrar sesión
+ * @param onVerGrupos Callback cuando se presiona ver grupos
+ * @param onMarcarAsistencias Callback cuando se presiona marcar asistencias
  */
 @Composable
 fun DocenteHomeScreen(
@@ -23,50 +36,240 @@ fun DocenteHomeScreen(
     onMarcarAsistencias: () -> Unit
 ) {
     HomeLayout { paddingValues ->
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(paddingValues)
-                .padding(24.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp, Alignment.CenterVertically),
-            horizontalAlignment = Alignment.CenterHorizontally
+        DocenteHomeContent(
+            paddingValues = paddingValues,
+            onLogout = onLogout,
+            onVerGrupos = onVerGrupos,
+            onMarcarAsistencias = onMarcarAsistencias
+        )
+    }
+}
+
+// ============================================================================
+// ORGANISMS - Componentes complejos que combinan múltiples moléculas
+// ============================================================================
+
+/**
+ * Contenido principal de la pantalla home del docente.
+ * 
+ * Organismo que combina el header y el menú de opciones.
+ */
+@Composable
+private fun DocenteHomeContent(
+    paddingValues: PaddingValues,
+    onLogout: () -> Unit,
+    onVerGrupos: () -> Unit,
+    onMarcarAsistencias: () -> Unit
+) {
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(paddingValues)
+            .padding(24.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(24.dp)
+    ) {
+        DocenteHomeHeader()
+        Spacer(modifier = Modifier.height(8.dp))
+        DocenteHomeMenu(
+            onVerGrupos = onVerGrupos,
+            onMarcarAsistencias = onMarcarAsistencias,
+            onLogout = onLogout
+        )
+    }
+}
+
+/**
+ * Menú de opciones del docente.
+ * 
+ * Organismo que agrupa todas las acciones disponibles.
+ */
+@Composable
+private fun DocenteHomeMenu(
+    onVerGrupos: () -> Unit,
+    onMarcarAsistencias: () -> Unit,
+    onLogout: () -> Unit
+) {
+    Column(
+        modifier = Modifier.fillMaxWidth(),
+        verticalArrangement = Arrangement.spacedBy(12.dp)
+    ) {
+        DocenteActionCard(
+            title = "Mis Grupos",
+            description = "Ver grupos asignados y estudiantes",
+            icon = Icons.Default.School,
+            onClick = onVerGrupos
+        )
+        
+        DocenteActionCard(
+            title = "Marcar Asistencias",
+            description = "Registrar asistencia de estudiantes",
+            icon = Icons.Default.CheckCircle,
+            onClick = onMarcarAsistencias
+        )
+        
+        Spacer(modifier = Modifier.height(8.dp))
+        HorizontalDivider(
+            modifier = Modifier.padding(vertical = 8.dp),
+            color = MaterialTheme.colorScheme.outlineVariant
+        )
+        
+        DocenteLogoutButton(onClick = onLogout)
+    }
+}
+
+// ============================================================================
+// MOLECULES - Componentes compuestos que combinan átomos
+// ============================================================================
+
+/**
+ * Header de la pantalla home del docente.
+ * 
+ * Molécula que muestra el título y mensaje de bienvenida.
+ */
+@Composable
+private fun DocenteHomeHeader() {
+    Column(
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(8.dp)
+    ) {
+        Surface(
+            modifier = Modifier.size(96.dp),
+            shape = RoundedCornerShape(24.dp),
+            color = MaterialTheme.colorScheme.primaryContainer
         ) {
-            Text(
-                text = "Panel del Docente",
-                style = MaterialTheme.typography.headlineMedium
-            )
-            
-            Text(
-                text = "Bienvenido",
-                style = MaterialTheme.typography.bodyLarge,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-            
-            HorizontalDivider(modifier = Modifier.padding(vertical = 12.dp))
-            
-            Button(
-                onClick = onVerGrupos,
-                modifier = Modifier.fillMaxWidth()
+            Box(
+                contentAlignment = Alignment.Center,
+                modifier = Modifier.fillMaxSize()
             ) {
-                Text("Mis Grupos")
-            }
-            
-            Button(
-                onClick = onMarcarAsistencias,
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Text("Marcar Asistencias")
-            }
-            
-            HorizontalDivider(modifier = Modifier.padding(vertical = 12.dp))
-            
-            OutlinedButton(
-                onClick = onLogout,
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Text("Cerrar sesión")
+                Icon(
+                    imageVector = Icons.Default.Person,
+                    contentDescription = null,
+                    modifier = Modifier.size(48.dp),
+                    tint = MaterialTheme.colorScheme.primary
+                )
             }
         }
+        
+        Text(
+            text = "Panel del Docente",
+            style = MaterialTheme.typography.headlineMedium,
+            fontWeight = FontWeight.Bold,
+            color = MaterialTheme.colorScheme.onSurface,
+            textAlign = TextAlign.Center
+        )
+        
+        Text(
+            text = "Bienvenido",
+            style = MaterialTheme.typography.bodyLarge,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            textAlign = TextAlign.Center
+        )
+    }
+}
+
+/**
+ * Card de acción para el menú del docente.
+ * 
+ * Molécula que combina icono, título, descripción y acción en un card interactivo.
+ */
+@Composable
+private fun DocenteActionCard(
+    title: String,
+    description: String,
+    icon: androidx.compose.ui.graphics.vector.ImageVector,
+    onClick: () -> Unit
+) {
+    Card(
+        onClick = onClick,
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceVariant
+        ),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(20.dp),
+            horizontalArrangement = Arrangement.spacedBy(16.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Surface(
+                modifier = Modifier.size(56.dp),
+                shape = RoundedCornerShape(12.dp),
+                color = MaterialTheme.colorScheme.primaryContainer
+            ) {
+                Box(
+                    contentAlignment = Alignment.Center,
+                    modifier = Modifier.fillMaxSize()
+                ) {
+                    Icon(
+                        imageVector = icon,
+                        contentDescription = null,
+                        modifier = Modifier.size(28.dp),
+                        tint = MaterialTheme.colorScheme.primary
+                    )
+                }
+            }
+            
+            Column(
+                modifier = Modifier.weight(1f),
+                verticalArrangement = Arrangement.spacedBy(4.dp)
+            ) {
+                Text(
+                    text = title,
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.SemiBold,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                Text(
+                    text = description,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
+                )
+            }
+            
+            Icon(
+                imageVector = Icons.Default.ChevronRight,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
+                modifier = Modifier.size(24.dp)
+            )
+        }
+    }
+}
+
+/**
+ * Botón de cerrar sesión.
+ * 
+ * Molécula que combina un OutlinedButton con icono de logout.
+ */
+@Composable
+private fun DocenteLogoutButton(onClick: () -> Unit) {
+    OutlinedButton(
+        onClick = onClick,
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(16.dp),
+        colors = ButtonDefaults.outlinedButtonColors(
+            contentColor = MaterialTheme.colorScheme.error
+        ),
+        border = ButtonDefaults.outlinedButtonBorder(enabled = true).copy(
+            brush = androidx.compose.ui.graphics.SolidColor(MaterialTheme.colorScheme.error.copy(alpha = 0.5f))
+        )
+    ) {
+        Icon(
+            imageVector = Icons.Default.ExitToApp,
+            contentDescription = null,
+            modifier = Modifier.size(20.dp)
+        )
+        Spacer(modifier = Modifier.width(8.dp))
+        Text(
+            text = "Cerrar sesión",
+            style = MaterialTheme.typography.labelLarge,
+            fontWeight = FontWeight.Medium
+        )
     }
 }
 

@@ -77,6 +77,7 @@ fun AppNavHost() {
         // Rutas de alumno
         AlumnoRoutes(
             navController = navController,
+            session = session,
             userId = userId,
             builder = this
         )
@@ -220,6 +221,7 @@ private fun DocenteRoutes(
  */
 private fun AlumnoRoutes(
     navController: androidx.navigation.NavHostController,
+    session: UserSession,
     userId: Int,
     builder: NavGraphBuilder
 ) {
@@ -227,7 +229,7 @@ private fun AlumnoRoutes(
         AlumnoHomeScreen(
             navController = navController,
             onLogout = {
-                navController.popBackStack(NavRoutes.Login, inclusive = false)
+                handleLogout(navController, session)
             },
             onGestionarInscripciones = { 
                 navController.navigate(NavRoutes.GestionarInscripciones) 
