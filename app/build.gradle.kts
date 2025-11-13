@@ -40,6 +40,23 @@ android {
     composeOptions {
         kotlinCompilerExtensionVersion = "1.5.3"
     }
+    
+    // Configuración de packaging para Apache POI
+    packaging {
+        resources {
+            // Excluir archivos duplicados de META-INF
+            excludes += "/META-INF/{AL2.0,LGPL2.1}"
+            excludes += "/META-INF/DEPENDENCIES"
+            excludes += "/META-INF/LICENSE"
+            excludes += "/META-INF/LICENSE.txt"
+            excludes += "/META-INF/license.txt"
+            excludes += "/META-INF/NOTICE"
+            excludes += "/META-INF/NOTICE.txt"
+            excludes += "/META-INF/notice.txt"
+            excludes += "/META-INF/ASL2.0"
+            excludes += "/META-INF/*.kotlin_module"
+        }
+    }
 }
 
 dependencies {
@@ -74,6 +91,19 @@ dependencies {
     implementation("androidx.navigation:navigation-compose:2.7.0")
 
     // --- NUEVO: Apache POI para exportación a Excel ---
+    // Core POI
     implementation("org.apache.poi:poi:5.2.3")
+    
+    // POI OOXML para .xlsx
     implementation("org.apache.poi:poi-ooxml:5.2.3")
+    
+    // Dependencias transitivas requeridas por POI
+    implementation("org.apache.poi:poi-ooxml-lite:5.2.3")
+    implementation("org.apache.xmlbeans:xmlbeans:5.1.1")
+    implementation("org.apache.commons:commons-compress:1.21")
+    implementation("org.apache.commons:commons-collections4:4.4")
+    implementation("commons-codec:commons-codec:1.15")
+    
+    // Logging (requerido por POI)
+    implementation("org.slf4j:slf4j-android:1.7.36")
 }

@@ -1,7 +1,7 @@
 package com.bo.asistenciaapp.data.export.adapter
 
+import android.util.Log
 import com.bo.asistenciaapp.domain.model.Asistencia
-import org.apache.poi.ss.usermodel.*
 import org.apache.poi.xssf.usermodel.XSSFWorkbook
 import java.io.ByteArrayOutputStream
 
@@ -11,194 +11,162 @@ import java.io.ByteArrayOutputStream
  * ## Patrón Adapter - Rol: Adapter
  * - Adapta la librería Apache POI (Adaptee) a la interface DataExportAdapter (Target)
  * - Convierte objetos Asistencia a formato Excel
- * - Encapsula toda la complejidad de Apache POI
+ * - Versión SIMPLIFICADA sin estilos para mayor estabilidad
  * 
  * ## Implementación:
  * - Usa Apache POI XSSFWorkbook para archivos .xlsx
- * - Crea una hoja con encabezados formateados
- * - Aplica estilos profesionales (colores, bordes, alineación)
- * - Ajusta automáticamente el ancho de las columnas
+ * - Sin estilos (solo datos puros)
+ * - Try-catch completo para manejo de errores
+ * - Logs detallados con Log.d()
  * 
  * ## Dependencias:
- * - Apache POI 5.x (org.apache.poi:poi-ooxml)
- * - Debe agregarse al build.gradle.kts:
- *   implementation("org.apache.poi:poi-ooxml:5.2.3")
+ * - Apache POI 5.2.3 (org.apache.poi:poi-ooxml)
+ * - Todas las dependencias transitivas incluidas en build.gradle.kts
  */
 class AsistenciaExcelAdapter : DataExportAdapter<Asistencia> {
     
+    companion object {
+        private const val TAG = "AsistenciaExcelAdapter"
+    }
+    
     /**
-     * Exporta las asistencias a un archivo Excel con formato profesional.
+     * Exporta las asistencias a un archivo Excel SIMPLE.
      * 
-     * El archivo generado contiene:
-     * - Fila de encabezados con estilo (fondo azul, texto blanco, negrita)
-     * - Datos de asistencias con bordes
-     * - Columnas auto-ajustadas al contenido
-     * - Formato de fecha legible
+     * SIN estilos, SIN formato, solo datos puros para evitar errores.
      * 
      * @param data Lista de asistencias a exportar
-     * @param nombreArchivo Nombre base del archivo (se usa para el título de la hoja)
+     * @param nombreArchivo Nombre base del archivo
      * @return ByteArray con el contenido del archivo Excel (.xlsx)
-     * @throws Exception Si hay error al generar el archivo
      */
     override fun exportar(data: List<Asistencia>, nombreArchivo: String): ByteArray {
-        // Crear un nuevo libro de trabajo (workbook) de Excel
-        val workbook: Workbook = XSSFWorkbook()
+        Log.d(TAG, "=== INICIO EXPORTACIÓN EXCEL ===")
+        Log.d(TAG, "Nombre archivo: $nombreArchivo")
+        Log.d(TAG, "Cantidad de asistencias: ${data.size}")
+        
+        var workbook: XSSFWorkbook? = null
+        var outputStream: ByteArrayOutputStream? = null
         
         try {
-            // Crear una hoja llamada "Asistencias"
-            val hoja: Sheet = workbook.createSheet("Asistencias")
+            // 1. Crear workbook
+            Log.d(TAG, "Creando XSSFWorkbook...")
+            workbook = XSSFWorkbook()
+            Log.d(TAG, "XSSFWorkbook creado exitosamente")
             
-            // Crear estilos
-            val estiloEncabezado = crearEstiloEncabezado(workbook)
-            val estiloDatos = crearEstiloDatos(workbook)
+            // 2. Crear hoja
+            Log.d(TAG, "Creando hoja 'Asistencias'...")
+            val hoja = workbook.createSheet("Asistencias")
+            Log.d(TAG, "Hoja creada exitosamente")
             
-            // Crear fila de encabezados (fila 0)
+            // 3. Crear encabezados (fila 0) - SIN ESTILOS
+            Log.d(TAG, "Creando fila de encabezados...")
             val filaEncabezado = hoja.createRow(0)
-            val encabezados = arrayOf("ID", "ID Alumno", "ID Grupo", "Fecha", "Grupo", "Materia")
+            val encabezados = arrayOf("ID", "ID_Alumno", "ID_Grupo", "Fecha", "Grupo", "Materia")
             
             encabezados.forEachIndexed { indice, titulo ->
-                val celda = filaEncabezado.createCell(indice)
-                celda.setCellValue(titulo)
-                celda.cellStyle = estiloEncabezado
+                try {
+                    val celda = filaEncabezado.createCell(indice)
+                    celda.setCellValue(titulo)
+                    Log.d(TAG, "Encabezado $indice: $titulo")
+                } catch (e: Exception) {
+                    Log.e(TAG, "Error en encabezado $indice: ${e.message}")
+                    throw e
+                }
             }
+            Log.d(TAG, "Encabezados creados exitosamente")
             
-            // Agregar los datos de asistencias (a partir de la fila 1)
+            // 4. Agregar datos (a partir de la fila 1) - SIN ESTILOS
+            Log.d(TAG, "Agregando ${data.size} filas de datos...")
             data.forEachIndexed { indice, asistencia ->
-                val fila = hoja.createRow(indice + 1)
-                
-                // Columna 0: ID
-                val celdaId = fila.createCell(0)
-                celdaId.setCellValue(asistencia.id.toDouble())
-                celdaId.cellStyle = estiloDatos
-                
-                // Columna 1: ID Alumno
-                val celdaAlumnoId = fila.createCell(1)
-                celdaAlumnoId.setCellValue(asistencia.alumnoId.toDouble())
-                celdaAlumnoId.cellStyle = estiloDatos
-                
-                // Columna 2: ID Grupo
-                val celdaGrupoId = fila.createCell(2)
-                celdaGrupoId.setCellValue(asistencia.grupoId.toDouble())
-                celdaGrupoId.cellStyle = estiloDatos
-                
-                // Columna 3: Fecha
-                val celdaFecha = fila.createCell(3)
-                celdaFecha.setCellValue(asistencia.fecha)
-                celdaFecha.cellStyle = estiloDatos
-                
-                // Columna 4: Grupo
-                val celdaGrupo = fila.createCell(4)
-                celdaGrupo.setCellValue(asistencia.grupo)
-                celdaGrupo.cellStyle = estiloDatos
-                
-                // Columna 5: Materia
-                val celdaMateria = fila.createCell(5)
-                celdaMateria.setCellValue(asistencia.materiaNombre)
-                celdaMateria.cellStyle = estiloDatos
+                try {
+                    val fila = hoja.createRow(indice + 1)
+                    
+                    // Columna 0: ID
+                    fila.createCell(0).setCellValue(asistencia.id.toDouble())
+                    
+                    // Columna 1: ID Alumno
+                    fila.createCell(1).setCellValue(asistencia.alumnoId.toDouble())
+                    
+                    // Columna 2: ID Grupo
+                    fila.createCell(2).setCellValue(asistencia.grupoId.toDouble())
+                    
+                    // Columna 3: Fecha
+                    fila.createCell(3).setCellValue(asistencia.fecha)
+                    
+                    // Columna 4: Grupo
+                    fila.createCell(4).setCellValue(asistencia.grupo)
+                    
+                    // Columna 5: Materia
+                    fila.createCell(5).setCellValue(asistencia.materiaNombre)
+                    
+                    if ((indice + 1) % 10 == 0) {
+                        Log.d(TAG, "Procesadas ${indice + 1} filas...")
+                    }
+                    
+                } catch (e: Exception) {
+                    Log.e(TAG, "Error en fila ${indice + 1}: ${e.message}", e)
+                    throw e
+                }
             }
+            Log.d(TAG, "Todas las filas agregadas exitosamente")
             
-            // Auto-ajustar el ancho de todas las columnas al contenido
-            for (i in encabezados.indices) {
-                hoja.autoSizeColumn(i)
-                // Agregar un poco de espacio extra (10% más)
-                val anchoActual = hoja.getColumnWidth(i)
-                hoja.setColumnWidth(i, (anchoActual * 1.1).toInt())
-            }
-            
-            // Convertir el workbook a ByteArray
-            val outputStream = ByteArrayOutputStream()
+            // 5. Convertir a ByteArray
+            Log.d(TAG, "Convirtiendo workbook a ByteArray...")
+            outputStream = ByteArrayOutputStream()
             workbook.write(outputStream)
-            return outputStream.toByteArray()
+            val bytes = outputStream.toByteArray()
+            Log.d(TAG, "Conversión exitosa. Tamaño: ${bytes.size} bytes")
+            
+            Log.d(TAG, "=== EXPORTACIÓN EXCEL EXITOSA ===")
+            return bytes
+            
+        } catch (e: Exception) {
+            Log.e(TAG, "=== ERROR EN EXPORTACIÓN EXCEL ===")
+            Log.e(TAG, "Tipo de error: ${e.javaClass.simpleName}")
+            Log.e(TAG, "Mensaje: ${e.message}")
+            Log.e(TAG, "Stack trace:", e)
+            throw Exception("Error al exportar a Excel: ${e.message}", e)
             
         } finally {
-            // Cerrar el workbook para liberar recursos
-            workbook.close()
+            // Cerrar recursos en el orden correcto
+            try {
+                outputStream?.close()
+                Log.d(TAG, "OutputStream cerrado")
+            } catch (e: Exception) {
+                Log.e(TAG, "Error cerrando OutputStream: ${e.message}")
+            }
+            
+            try {
+                workbook?.close()
+                Log.d(TAG, "Workbook cerrado")
+            } catch (e: Exception) {
+                Log.e(TAG, "Error cerrando Workbook: ${e.message}")
+            }
         }
-    }
-    
-    /**
-     * Crea el estilo para las celdas de encabezado.
-     * 
-     * Estilo aplicado:
-     * - Fondo azul (RGB: 79, 129, 189)
-     * - Texto blanco
-     * - Negrita
-     * - Centrado horizontal y vertical
-     * - Bordes en todos los lados
-     */
-    private fun crearEstiloEncabezado(workbook: Workbook): CellStyle {
-        val estilo = workbook.createCellStyle()
-        val fuente = workbook.createFont()
-        
-        // Configurar la fuente
-        fuente.bold = true
-        fuente.color = IndexedColors.WHITE.index
-        fuente.fontHeightInPoints = 11
-        
-        // Aplicar la fuente al estilo
-        estilo.setFont(fuente)
-        
-        // Configurar el fondo
-        estilo.fillForegroundColor = IndexedColors.DARK_BLUE.index
-        estilo.fillPattern = FillPatternType.SOLID_FOREGROUND
-        
-        // Configurar alineación
-        estilo.alignment = HorizontalAlignment.CENTER
-        estilo.verticalAlignment = VerticalAlignment.CENTER
-        
-        // Configurar bordes
-        estilo.borderTop = BorderStyle.THIN
-        estilo.borderBottom = BorderStyle.THIN
-        estilo.borderLeft = BorderStyle.THIN
-        estilo.borderRight = BorderStyle.THIN
-        
-        return estilo
-    }
-    
-    /**
-     * Crea el estilo para las celdas de datos.
-     * 
-     * Estilo aplicado:
-     * - Texto negro sobre fondo blanco
-     * - Alineación centrada
-     * - Bordes en todos los lados
-     */
-    private fun crearEstiloDatos(workbook: Workbook): CellStyle {
-        val estilo = workbook.createCellStyle()
-        
-        // Configurar alineación
-        estilo.alignment = HorizontalAlignment.CENTER
-        estilo.verticalAlignment = VerticalAlignment.CENTER
-        
-        // Configurar bordes
-        estilo.borderTop = BorderStyle.THIN
-        estilo.borderBottom = BorderStyle.THIN
-        estilo.borderLeft = BorderStyle.THIN
-        estilo.borderRight = BorderStyle.THIN
-        
-        // Color de bordes
-        estilo.topBorderColor = IndexedColors.GREY_50_PERCENT.index
-        estilo.bottomBorderColor = IndexedColors.GREY_50_PERCENT.index
-        estilo.leftBorderColor = IndexedColors.GREY_50_PERCENT.index
-        estilo.rightBorderColor = IndexedColors.GREY_50_PERCENT.index
-        
-        return estilo
     }
     
     /**
      * Retorna la extensión del archivo Excel moderno.
      */
-    override fun obtenerExtension(): String = "xlsx"
+    override fun obtenerExtension(): String {
+        Log.d(TAG, "obtenerExtension() llamado: xlsx")
+        return "xlsx"
+    }
     
     /**
      * Retorna el tipo MIME para archivos Excel modernos (.xlsx).
      */
-    override fun obtenerTipoMime(): String = 
-        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+    override fun obtenerTipoMime(): String {
+        val mime = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+        Log.d(TAG, "obtenerTipoMime() llamado: $mime")
+        return mime
+    }
     
     /**
      * Retorna el nombre descriptivo del formato.
      */
-    override fun obtenerNombreFormato(): String = "Excel"
+    override fun obtenerNombreFormato(): String {
+        Log.d(TAG, "obtenerNombreFormato() llamado: Excel")
+        return "Excel"
+    }
 }
 
