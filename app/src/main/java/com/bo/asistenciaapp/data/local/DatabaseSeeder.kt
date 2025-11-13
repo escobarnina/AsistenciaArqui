@@ -115,28 +115,28 @@ object DatabaseSeeder {
     private fun seedGrupos(db: SQLiteDatabase) {
         db.execSQL(
             """
-            INSERT INTO grupos(materia_id, materia_nombre, docente_id, docente_nombre, semestre, gestion, capacidad, grupo, tolerancia_minutos)
+            INSERT INTO grupos(materia_id, materia_nombre, docente_id, docente_nombre, semestre, gestion, capacidad, grupo, tolerancia_minutos, tipo_estrategia)
             VALUES
-            (1, 'Programación I', 4, 'Marcos Rodríguez', 1, 2025, 30, 'A', 10),
-            (1, 'Programación I', 5, 'Maria Fernández', 1, 2025, 25, 'B', 15),
-            (2, 'Programación II', 4, 'Marcos Rodríguez', 1, 2025, 28, 'A', 10),
-            (2, 'Programación II', 6, 'Julia Martínez', 1, 2025, 30, 'B', 20),
-            (3, 'Programación III', 4, 'Marcos Rodríguez', 1, 2025, 20, 'A', 5),
-            (4, 'Base de Datos I', 5, 'Maria Fernández', 1, 2025, 30, 'A', 10),
-            (4, 'Base de Datos I', 7, 'Roberto Sánchez', 1, 2025, 25, 'B', 15),
-            (5, 'Base de Datos II', 5, 'Maria Fernández', 1, 2025, 22, 'A', 10),
-            (6, 'Estructura de Datos', 6, 'Julia Martínez', 1, 2025, 28, 'A', 10),
-            (6, 'Estructura de Datos', 7, 'Roberto Sánchez', 1, 2025, 30, 'B', 20),
-            (7, 'Algoritmos y Complejidad', 4, 'Marcos Rodríguez', 1, 2025, 20, 'A', 5),
-            (8, 'Sistemas Operativos', 7, 'Roberto Sánchez', 1, 2025, 25, 'A', 10),
-            (8, 'Sistemas Operativos', 8, 'Laura González', 1, 2025, 28, 'B', 15),
-            (9, 'Redes de Computadoras', 8, 'Laura González', 1, 2025, 30, 'A', 10),
-            (10, 'Ingeniería de Software', 5, 'Maria Fernández', 1, 2025, 25, 'A', 15),
-            (11, 'Arquitectura de Computadoras', 6, 'Julia Martínez', 1, 2025, 30, 'A', 10),
-            (12, 'Matemática Discreta', 7, 'Roberto Sánchez', 1, 2025, 35, 'A', 10),
-            (13, 'Cálculo I', 8, 'Laura González', 1, 2025, 40, 'A', 15),
-            (19, 'Ética Profesional', 5, 'Maria Fernández', 1, 2025, 50, 'A', 20),
-            (20, 'Gestión de Proyectos', 6, 'Julia Martínez', 1, 2025, 30, 'A', 10)
+            (1, 'Programación I', 4, 'Marcos Rodríguez', 1, 2025, 30, 'A', 10, 'RETRASO'),
+            (1, 'Programación I', 5, 'Maria Fernández', 1, 2025, 25, 'B', 15, 'PRESENTE'),
+            (2, 'Programación II', 4, 'Marcos Rodríguez', 1, 2025, 28, 'A', 10, 'RETRASO'),
+            (2, 'Programación II', 6, 'Julia Martínez', 1, 2025, 30, 'B', 20, 'FALTA'),
+            (3, 'Programación III', 4, 'Marcos Rodríguez', 1, 2025, 20, 'A', 5, 'RETRASO'),
+            (4, 'Base de Datos I', 5, 'Maria Fernández', 1, 2025, 30, 'A', 10, 'PRESENTE'),
+            (4, 'Base de Datos I', 7, 'Roberto Sánchez', 1, 2025, 25, 'B', 15, 'RETRASO'),
+            (5, 'Base de Datos II', 5, 'Maria Fernández', 1, 2025, 22, 'A', 10, 'RETRASO'),
+            (6, 'Estructura de Datos', 6, 'Julia Martínez', 1, 2025, 28, 'A', 10, 'FALTA'),
+            (6, 'Estructura de Datos', 7, 'Roberto Sánchez', 1, 2025, 30, 'B', 20, 'RETRASO'),
+            (7, 'Algoritmos y Complejidad', 4, 'Marcos Rodríguez', 1, 2025, 20, 'A', 5, 'RETRASO'),
+            (8, 'Sistemas Operativos', 7, 'Roberto Sánchez', 1, 2025, 25, 'A', 10, 'RETRASO'),
+            (8, 'Sistemas Operativos', 8, 'Laura González', 1, 2025, 28, 'B', 15, 'PRESENTE'),
+            (9, 'Redes de Computadoras', 8, 'Laura González', 1, 2025, 30, 'A', 10, 'RETRASO'),
+            (10, 'Ingeniería de Software', 5, 'Maria Fernández', 1, 2025, 25, 'A', 15, 'RETRASO'),
+            (11, 'Arquitectura de Computadoras', 6, 'Julia Martínez', 1, 2025, 30, 'A', 10, 'RETRASO'),
+            (12, 'Matemática Discreta', 7, 'Roberto Sánchez', 1, 2025, 35, 'A', 10, 'RETRASO'),
+            (13, 'Cálculo I', 8, 'Laura González', 1, 2025, 40, 'A', 15, 'RETRASO'),
+            (19, 'Ética Profesional', 5, 'Maria Fernández', 1, 2025, 50, 'A', 20, 'PRESENTE'),
+            (20, 'Gestión de Proyectos', 6, 'Julia Martínez', 1, 2025, 30, 'A', 10, 'RETRASO')
         """.trimIndent()
         )
         Log.d(TAG, "20 grupos de prueba insertados con tolerancias configurables")

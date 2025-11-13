@@ -112,6 +112,7 @@ object DatabaseMigrations {
                 capacidad INTEGER NOT NULL,
                 nro_inscritos INTEGER DEFAULT 0,
                 tolerancia_minutos INTEGER DEFAULT 10 NOT NULL CHECK(tolerancia_minutos >= 0 AND tolerancia_minutos <= 60),
+                tipo_estrategia TEXT DEFAULT 'RETRASO' NOT NULL CHECK(tipo_estrategia IN ('PRESENTE', 'RETRASO', 'FALTA')),
                 FOREIGN KEY(materia_id) REFERENCES materias(id),
                 FOREIGN KEY(docente_id) REFERENCES usuarios(id)
             )

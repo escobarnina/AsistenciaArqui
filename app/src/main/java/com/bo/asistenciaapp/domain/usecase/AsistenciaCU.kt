@@ -5,6 +5,8 @@ import com.bo.asistenciaapp.data.repository.AsistenciaRepository
 import com.bo.asistenciaapp.domain.model.Asistencia
 import com.bo.asistenciaapp.domain.strategy.attendance.IEstrategiaAsistencia
 import com.bo.asistenciaapp.domain.strategy.attendance.EstrategiaRetraso
+import com.bo.asistenciaapp.domain.strategy.attendance.EstrategiaPresente
+import com.bo.asistenciaapp.domain.strategy.attendance.EstrategiaFalta
 import com.bo.asistenciaapp.domain.utils.Validators
 import com.bo.asistenciaapp.domain.utils.ValidationResult
 import com.bo.asistenciaapp.domain.utils.validate
@@ -144,16 +146,21 @@ class AsistenciaCU(private val asistenciaRepository: AsistenciaRepository) {
         val toleranciaMinutos = asistenciaRepository.obtenerToleranciaGrupo(grupoId)
         Log.d(TAG, "Tolerancia obtenida del grupo $grupoId: $toleranciaMinutos minutos")
         
-        // Delegar el cálculo del estado a la estrategia actual
-        val estado = if (_estrategia != null) {
-            Log.d(TAG, "Usando estrategia: ${_estrategia!!::class.simpleName}")
-            _estrategia!!.calcularEstado(horaMarcado, horaInicio, toleranciaMinutos)
-        } else {
-            Log.w(TAG, "No hay estrategia definida, usando estrategia por defecto (EstrategiaRetraso)")
-            val estrategiaDefault = EstrategiaRetraso()
-            estrategiaDefault.calcularEstado(horaMarcado, horaInicio, toleranciaMinutos)
+        // ⭐ CONFIGURAR ESTRATEGIA AUTOMÁTICAMENTE DESDE BD:
+        // Si no hay estrategia configurada manualmente, obtenerla del grupo
+        if (_estrategia == null) {
+            val tipoEstrategia = asistenciaRepository.obtenerTipoEstrategiaGrupo(grupoId)
+            Log.d(TAG, "Tipo de estrategia del grupo $grupoId: $tipoEstrategia")
+            _estrategia = when (tipoEstrategia) {
+                "PRESENTE" -> EstrategiaPresente()
+                "FALTA" -> EstrategiaFalta()
+                else -> EstrategiaRetraso()  // Por defecto RETRASO
+            }
+            Log.d(TAG, "Estrategia configurada automáticamente: ${_estrategia!!::class.simpleName}")
         }
         
+        // Delegar el cálculo del estado a la estrategia actual
+        val estado = _estrategia!!.calcularEstado(horaMarcado, horaInicio, toleranciaMinutos)
         Log.d(TAG, "Estado calculado por la estrategia: $estado (tolerancia: $toleranciaMinutos min)")
         
         // Registrar asistencia en el repositorio
@@ -167,12 +174,14 @@ class AsistenciaCU(private val asistenciaRepository: AsistenciaRepository) {
     
     /**
      * Versión simplificada de marcarAsistencia sin hora (retrocompatibilidad).
-     * Usa la hora actual del sistema.
+     * Usa la hora actual del sistema y obtiene la hora de inicio del grupo automáticamente.
      */
     fun marcarAsistencia(alumnoId: Int, grupoId: Int, fecha: String): ValidationResult {
         // Usar hora actual del sistema
         val horaActual = obtenerHoraActual()
-        val horaInicio = "08:00" // Hora de inicio por defecto
+        // Obtener hora de inicio del grupo desde la BD
+        val horaInicio = asistenciaRepository.obtenerHoraInicioGrupo(grupoId)
+        Log.d(TAG, "Hora del sistema: $horaActual, Hora inicio grupo: $horaInicio")
         
         return marcarAsistencia(alumnoId, grupoId, fecha, horaActual, horaInicio)
     }

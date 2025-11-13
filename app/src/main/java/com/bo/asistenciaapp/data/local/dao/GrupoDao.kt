@@ -16,7 +16,7 @@ class GrupoDao(private val database: SQLiteDatabase) {
     fun obtenerTodos(): List<Grupo> {
         val lista = mutableListOf<Grupo>()
         database.rawQuery(
-            "SELECT id, materia_id, materia_nombre, docente_id, docente_nombre, semestre, gestion, capacidad, nro_inscritos, grupo, tolerancia_minutos FROM grupos",
+            "SELECT id, materia_id, materia_nombre, docente_id, docente_nombre, semestre, gestion, capacidad, nro_inscritos, grupo, tolerancia_minutos, tipo_estrategia FROM grupos",
             null
         ).use { c ->
             while (c.moveToNext()) {
@@ -32,7 +32,8 @@ class GrupoDao(private val database: SQLiteDatabase) {
                         capacidad = c.getInt(7),
                         nroInscritos = c.getInt(8),
                         grupo = c.getString(9),
-                        toleranciaMinutos = c.getInt(10)  // ⭐ NUEVO CAMPO
+                        toleranciaMinutos = c.getInt(10),
+                        tipoEstrategia = c.getString(11)  // ⭐ NUEVO CAMPO
                     )
                 )
             }
@@ -74,7 +75,7 @@ class GrupoDao(private val database: SQLiteDatabase) {
     fun obtenerPorDocente(docenteId: Int): List<Grupo> {
         val lista = mutableListOf<Grupo>()
         database.rawQuery(
-            "SELECT id, materia_id, materia_nombre, docente_id, docente_nombre, semestre, gestion, capacidad, nro_inscritos, grupo, tolerancia_minutos FROM grupos WHERE docente_id=?",
+            "SELECT id, materia_id, materia_nombre, docente_id, docente_nombre, semestre, gestion, capacidad, nro_inscritos, grupo, tolerancia_minutos, tipo_estrategia FROM grupos WHERE docente_id=?",
             arrayOf(docenteId.toString())
         ).use { c ->
             while (c.moveToNext()) {
@@ -104,7 +105,7 @@ class GrupoDao(private val database: SQLiteDatabase) {
      */
     fun obtenerPorId(id: Int): Grupo? {
         database.rawQuery(
-            "SELECT id, materia_id, materia_nombre, docente_id, docente_nombre, semestre, gestion, capacidad, nro_inscritos, grupo, tolerancia_minutos FROM grupos WHERE id=?",
+            "SELECT id, materia_id, materia_nombre, docente_id, docente_nombre, semestre, gestion, capacidad, nro_inscritos, grupo, tolerancia_minutos, tipo_estrategia FROM grupos WHERE id=?",
             arrayOf(id.toString())
         ).use { c ->
             return if (c.moveToFirst()) {
@@ -119,7 +120,8 @@ class GrupoDao(private val database: SQLiteDatabase) {
                     capacidad = c.getInt(7),
                     nroInscritos = c.getInt(8),
                     grupo = c.getString(9),
-                    toleranciaMinutos = c.getInt(10)  // ⭐ NUEVO CAMPO
+                    toleranciaMinutos = c.getInt(10),
+                    tipoEstrategia = c.getString(11)  // ⭐ NUEVO CAMPO
                 )
             } else {
                 null
@@ -141,6 +143,23 @@ class GrupoDao(private val database: SQLiteDatabase) {
         database.execSQL(
             "UPDATE grupos SET tolerancia_minutos = ? WHERE id = ?",
             arrayOf(toleranciaMinutos, id)
+        )
+    }
+    
+    /**
+     * Actualiza el tipo de estrategia de un grupo específico.
+     * 
+     * ⭐ PATRÓN STRATEGY - Configuración Dinámica:
+     * Este método permite modificar qué estrategia utilizará el grupo
+     * para calcular el estado de asistencia (PRESENTE, RETRASO, FALTA).
+     * 
+     * @param id ID del grupo a actualizar
+     * @param tipoEstrategia Tipo de estrategia: "PRESENTE", "RETRASO" o "FALTA"
+     */
+    fun actualizarTipoEstrategia(id: Int, tipoEstrategia: String) {
+        database.execSQL(
+            "UPDATE grupos SET tipo_estrategia = ? WHERE id = ?",
+            arrayOf(tipoEstrategia, id)
         )
     }
     

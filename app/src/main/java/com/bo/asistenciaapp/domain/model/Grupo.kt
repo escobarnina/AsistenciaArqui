@@ -22,6 +22,8 @@ package com.bo.asistenciaapp.domain.model
  * - `nroInscritos`: Número actual de estudiantes inscritos en el grupo
  * - `toleranciaMinutos`: ⭐ PATRÓN STRATEGY - Tiempo máximo (en minutos) permitido 
  *   para considerar un retraso antes de marcar FALTA. Valores: 0-60. Por defecto: 10
+ * - `tipoEstrategia`: ⭐ PATRÓN STRATEGY - Tipo de estrategia a utilizar para calcular
+ *   el estado de asistencia. Valores: "PRESENTE", "RETRASO", "FALTA". Por defecto: "RETRASO"
  * 
  * Ejemplo de uso:
  * ```kotlin
@@ -36,7 +38,8 @@ package com.bo.asistenciaapp.domain.model
  *     gestion = 2025,
  *     capacidad = 30,
  *     nroInscritos = 15,
- *     toleranciaMinutos = 10
+ *     toleranciaMinutos = 10,
+ *     tipoEstrategia = "RETRASO"
  * )
  * ```
  * 
@@ -53,6 +56,7 @@ package com.bo.asistenciaapp.domain.model
  * - El número de inscritos no puede exceder la capacidad
  * - El año de gestión debe ser válido (año actual ± 5 años)
  * - La tolerancia debe estar entre 0 y 60 minutos
+ * - El tipo de estrategia debe ser uno de: "PRESENTE", "RETRASO", "FALTA"
  */
 data class Grupo(
     val id: Int,
@@ -65,5 +69,6 @@ data class Grupo(
     val gestion: Int,
     val capacidad: Int,
     val nroInscritos: Int,
-    val toleranciaMinutos: Int = 10  // ⭐ Valor por defecto: 10 minutos
+    val toleranciaMinutos: Int = 10,  // ⭐ Valor por defecto: 10 minutos
+    val tipoEstrategia: String = "RETRASO"  // ⭐ Valor por defecto: "RETRASO"
 )

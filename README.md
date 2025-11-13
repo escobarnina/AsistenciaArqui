@@ -345,13 +345,18 @@ app/src/main/java/com/bo/asistenciaapp/
 │   │   │   └── AsistenciaDao.kt
 │   │   ├── UserSession.kt            # SharedPreferences para sesión
 │   │   └── StringRange.kt            # Utilidades
-│   └── repository/                   # Repositorios (abstracción de acceso a datos)
-│       ├── UsuarioRepository.kt
-│       ├── MateriaRepository.kt
-│       ├── GrupoRepository.kt
-│       ├── HorarioRepository.kt
-│       ├── InscripcionRepository.kt
-│       └── AsistenciaRepository.kt
+│   ├── repository/                   # Repositorios (abstracción de acceso a datos)
+│   │   ├── UsuarioRepository.kt
+│   │   ├── MateriaRepository.kt
+│   │   ├── GrupoRepository.kt
+│   │   ├── HorarioRepository.kt
+│   │   ├── InscripcionRepository.kt
+│   │   └── AsistenciaRepository.kt
+│   └── export/                       # Patrón Adapter - Exportación de datos
+│       └── adapter/                  # Adaptadores de exportación
+│           ├── DataExportAdapter.kt   # Target (Interface)
+│           ├── AsistenciaExcelAdapter.kt  # Adapter 1 (Excel)
+│           └── AsistenciaPDFAdapter.kt   # Adapter 2 (PDF)
 ├── domain/                            # CAPA DE DOMINIO
 │   ├── model/                        # Modelos de datos
 │   │   ├── Usuario.kt
@@ -359,14 +364,24 @@ app/src/main/java/com/bo/asistenciaapp/
 │   │   ├── Grupo.kt
 │   │   ├── Horario.kt
 │   │   ├── Asistencia.kt
-│   │   └── Boleta.kt
+│   │   ├── Boleta.kt
+│   │   └── ExportResult.kt           # Resultado de exportación (Adapter Pattern)
+│   ├── strategy/                      # Patrón Strategy
+│   │   └── attendance/               # Estrategias de asistencia
+│   │       ├── IEstrategiaAsistencia.kt  # Interface Strategy
+│   │       ├── EstrategiaPresente.kt     # ConcreteStrategy 1
+│   │       ├── EstrategiaRetraso.kt       # ConcreteStrategy 2
+│   │       └── EstrategiaFalta.kt         # ConcreteStrategy 3
 │   ├── usecase/                      # Casos de uso (lógica de negocio)
 │   │   ├── UsuarioCU.kt
 │   │   ├── MateriaCU.kt
 │   │   ├── GrupoCU.kt
 │   │   ├── HorarioCU.kt
 │   │   ├── InscripcionCU.kt
-│   │   └── AsistenciaCU.kt
+│   │   ├── AsistenciaCU.kt            # Context del Strategy Pattern
+│   │   ├── ConfigurarGrupoCU.kt      # Configurar tolerancia de grupos
+│   │   ├── ConfigurarHorarioCU.kt    # Configurar horarios de grupos
+│   │   └── ExportarAsistenciaCU.kt   # Client del Adapter Pattern
 │   ├── viewmodel/                    # ViewModels (estado UI)
 │   │   ├── VMLogin.kt                # ViewModel para login
 │   │   ├── VMUsuario.kt             # Gestión de usuarios
@@ -395,7 +410,10 @@ app/src/main/java/com/bo/asistenciaapp/
     │   ├── DocenteHomeScreen.kt      # Dashboard docente con Material Design 3
     │   ├── VerGruposDocenteScreen.kt # Ver grupos asignados
     │   ├── VerEstudiantesGrupoScreen.kt # Ver estudiantes por grupo
-    │   └── MarcarAsistenciaDocenteScreen.kt # Marcar asistencia de estudiantes
+    │   ├── MarcarAsistenciaDocenteScreen.kt # Marcar asistencia de estudiantes
+    │   ├── ConfigurarToleranciaDialog.kt # Configurar tolerancia por grupo (Strategy)
+    │   ├── ConfigurarHorarioDialog.kt    # Configurar horarios por grupo
+    │   └── ExportarAsistenciasDialog.kt  # Exportar asistencias (Adapter Pattern)
     └── common/
         ├── navigation/
         │   └── AppNavHost.kt        # Navegación principal (refactorizado)
@@ -528,8 +546,20 @@ Encapsulan la lógica de negocio y orquestan operaciones usando Repositories. Ca
   - `tieneCruceDeHorario()`: Verificación de conflictos
 - **`AsistenciaCU`**: 
   - `obtenerAsistencias()`: Consulta por alumno
-  - `marcarAsistencia()`: Validación de horarios y permisos
+  - `marcarAsistencia()`: Validación de horarios y permisos, **usa Strategy Pattern** para calcular estado
   - `puedeMarcarAsistencia()`: Verificación de condiciones
+  - `setEstrategia()`: Configura la estrategia para calcular estado (Strategy Pattern)
+- **`ConfigurarGrupoCU`**: 
+  - `actualizarTolerancia()`: Actualiza la tolerancia en minutos de un grupo
+  - `obtenerGrupo()`: Obtiene información del grupo incluyendo tolerancia
+- **`ConfigurarHorarioCU`**: 
+  - `agregarHorario()`: Agrega un horario a un grupo
+  - `obtenerHorariosPorGrupo()`: Obtiene horarios de un grupo
+  - `eliminarHorariosPorGrupo()`: Elimina todos los horarios de un grupo
+- **`ExportarAsistenciaCU`**: 
+  - `exportar()`: Exporta asistencias usando un adapter (Adapter Pattern)
+  - `exportarPorAlumno()`: Exporta asistencias de un alumno específico
+  - `tieneAsistenciasParaExportar()`: Verifica si hay datos para exportar
 
 **Características:**
 - **Validaciones:** Usan `Validators` y retornan `ValidationResult` (Success/Error)
@@ -1041,6 +1071,83 @@ Al crear la base de datos por primera vez:
 - Separación clara de responsabilidades
 - Facilita mantenimiento y pruebas
 
+### ✅ Strategy Pattern (Patrón Estrategia)
+- **Ubicación:** `domain/strategy/attendance/`
+- **Propósito:** Hacer flexible el cálculo del estado de asistencia (PRESENTE, RETRASO, FALTA)
+- **Context:** `AsistenciaCU.kt` actúa como contexto que usa diferentes estrategias
+- **Componentes:**
+  - **Interface Strategy:** `IEstrategiaAsistencia.kt` - Define el contrato común
+  - **ConcreteStrategy 1:** `EstrategiaPresente.kt` - Política flexible (siempre PRESENTE)
+  - **ConcreteStrategy 2:** `EstrategiaRetraso.kt` - Política estándar (PRESENTE/RETRASO/FALTA según tiempo)
+  - **ConcreteStrategy 3:** `EstrategiaFalta.kt` - Política estricta (más estricta con retrasos)
+- **Características:**
+  - Configuración dinámica por grupo desde la base de datos (`tipo_estrategia` en tabla `grupos`)
+  - Tolerancia configurable por grupo (`tolerancia_minutos` en tabla `grupos`)
+  - Selección automática de estrategia según configuración del grupo
+  - Permite cambiar el algoritmo de cálculo en tiempo de ejecución
+  - Elimina condicionales complejos para determinar el estado
+- **Uso:**
+  ```kotlin
+  // La estrategia se configura automáticamente desde la BD según el grupo
+  val asistenciaCU = AsistenciaCU(asistenciaRepository)
+  // No es necesario configurar manualmente, se obtiene del grupo
+  asistenciaCU.marcarAsistencia(alumnoId, grupoId, fecha)
+  // Internamente usa la estrategia configurada para el grupo
+  ```
+- **Configuración:**
+  - Los docentes pueden configurar qué estrategia usar por grupo desde la UI
+  - Los docentes pueden configurar la tolerancia en minutos por grupo
+  - Los valores se almacenan en la tabla `grupos` (`tipo_estrategia`, `tolerancia_minutos`)
+- **Ventajas:**
+  - Flexibilidad: Diferentes políticas por grupo sin modificar código
+  - Extensibilidad: Agregar nuevas estrategias sin afectar código existente
+  - Mantenibilidad: Lógica de cálculo encapsulada en clases separadas
+  - Testabilidad: Cada estrategia puede probarse independientemente
+
+### ✅ Adapter Pattern (Patrón Adaptador)
+- **Ubicación:** `data/export/adapter/`
+- **Propósito:** Exportar datos de asistencia en múltiples formatos (Excel, PDF) sin modificar el código cliente
+- **Componentes:**
+  - **Target (Interface):** `DataExportAdapter<T>` - Define el contrato común para todos los adaptadores
+  - **Adapter 1:** `AsistenciaExcelAdapter.kt` - Adapta Apache POI para exportar a Excel (.xlsx)
+  - **Adapter 2:** `AsistenciaPDFAdapter.kt` - Adapta Android PdfDocument para exportar a PDF
+  - **Client:** `ExportarAsistenciaCU.kt` - UseCase que usa los adaptadores sin conocer implementaciones concretas
+  - **Adaptees:** Apache POI (XSSFWorkbook) y Android PdfDocument (API nativa)
+- **Características:**
+  - El UseCase solo conoce la interface `DataExportAdapter`, no las implementaciones
+  - Fácil agregar nuevos formatos (CSV, JSON, etc.) sin modificar código existente
+  - Separación clara entre lógica de negocio y detalles de implementación
+  - Manejo robusto de errores con `ExportResult` (sealed class)
+- **Uso:**
+  ```kotlin
+  // En el UseCase (Client)
+  val exportarCU = ExportarAsistenciaCU(asistenciaRepository)
+  
+  // Exportar a Excel
+  val resultadoExcel = exportarCU.exportar(
+      grupoId = 1,
+      adapter = AsistenciaExcelAdapter()
+  )
+  
+  // Exportar a PDF
+  val resultadoPDF = exportarCU.exportar(
+      grupoId = 1,
+      adapter = AsistenciaPDFAdapter()
+  )
+  
+  // El UseCase no conoce qué tipo de adapter es, solo usa la interface
+  ```
+- **UI:**
+  - `ExportarAsistenciasDialog.kt` - Diálogo para seleccionar formato de exportación
+  - `ExportarAsistenciasButton.kt` - Botón simplificado para exportar
+  - Guarda archivos automáticamente en la carpeta Downloads
+  - Compatible con Scoped Storage (Android 10+)
+- **Ventajas:**
+  - Principio Open/Closed: Abierto a extensión, cerrado a modificación
+  - Inversión de dependencias: UseCase depende de abstracción, no de implementaciones
+  - Reutilización: Mismo UseCase para diferentes formatos
+  - Testabilidad: Fácil crear mocks de la interface para pruebas
+
 ### ✅ Separation of Concerns
 - **DatabaseMigrations:** Esquema y migraciones
 - **DatabaseSeeder:** Datos iniciales
@@ -1060,6 +1167,7 @@ Al crear la base de datos por primera vez:
 - Activity Compose 1.8.0, Compose BOM 2024.09.00, Material 3.
 - Navigation Compose 2.9.4.
 - Retrofit 2.9.0, Gson Converter, OkHttp Logging Interceptor 4.11.0.
+- **Apache POI 5.2.3** (poi, poi-ooxml) - Para exportación a Excel (Adapter Pattern)
 - JUnit 4.13.2, AndroidX Test (JUnit 1.1.5, Espresso 3.5.1) y tooling de Compose para pruebas.
 
 ## Requisitos de ejecución

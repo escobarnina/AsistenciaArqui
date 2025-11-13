@@ -17,7 +17,6 @@ import com.bo.asistenciaapp.presentation.admin.GestionarUsuariosScreen
 import com.bo.asistenciaapp.presentation.alumno.AlumnoHomeScreen
 import com.bo.asistenciaapp.presentation.alumno.GestionarAsistencia
 import com.bo.asistenciaapp.presentation.alumno.GestionarInscripciones
-import com.bo.asistenciaapp.presentation.alumno.MarcarAsistenciaTestScreen
 import com.bo.asistenciaapp.presentation.docente.DocenteHomeScreen
 import com.bo.asistenciaapp.presentation.docente.MarcarAsistenciaDocenteScreen
 import com.bo.asistenciaapp.presentation.docente.VerEstudiantesGrupoScreen
@@ -243,12 +242,6 @@ private fun AlumnoRoutes(
             onBack = { navController.popBackStack() }
         )
     }
-    
-    builder.composable(NavRoutes.MarcarAsistenciaTest) {
-        MarcarAsistenciaTestScreen(
-            onBack = { navController.popBackStack() }
-        )
-    }
 }
 
 // ============================================================================
@@ -345,7 +338,6 @@ private object NavRoutes {
     // Alumno
     const val AlumnoHome = "alumnoHome"
     const val GestionarAsistencias = "gestionarAsistencias"
-    const val MarcarAsistenciaTest = "marcarAsistenciaTest"
 }
 
 

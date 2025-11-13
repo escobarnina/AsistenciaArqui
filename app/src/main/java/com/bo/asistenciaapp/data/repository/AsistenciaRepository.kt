@@ -83,6 +83,49 @@ class AsistenciaRepository(private val database: AppDatabase) {
     }
     
     /**
+     * Obtiene el tipo de estrategia configurado para un grupo.
+     * 
+     * ⭐ PATRÓN STRATEGY CON DATOS DE BD:
+     * Este método permite obtener qué estrategia debe usar el grupo
+     * para calcular el estado de asistencia.
+     * 
+     * @param grupoId ID del grupo
+     * @return Tipo de estrategia: "PRESENTE", "RETRASO" o "FALTA" (por defecto "RETRASO")
+     */
+    fun obtenerTipoEstrategiaGrupo(grupoId: Int): String {
+        val grupo = database.grupoDao.obtenerPorId(grupoId)
+        return grupo?.tipoEstrategia ?: "RETRASO"  // Valor por defecto si no existe el grupo
+    }
+    
+    /**
+     * Obtiene la hora de inicio de un grupo para el día actual.
+     * 
+     * @param grupoId ID del grupo
+     * @return Hora de inicio en formato HH:mm, o "08:00" por defecto si no hay horario
+     */
+    fun obtenerHoraInicioGrupo(grupoId: Int): String {
+        val horarios = database.horarioDao.obtenerPorGrupo(grupoId)
+        if (horarios.isEmpty()) {
+            return "08:00"  // Hora por defecto
+        }
+        // Obtener el día actual
+        val diaActual = obtenerDiaActual()
+        // Buscar horario para el día actual
+        val horarioHoy = horarios.find { it.dia.equals(diaActual, ignoreCase = true) }
+        return horarioHoy?.horaInicio ?: horarios.first().horaInicio  // Usar el primer horario si no hay para hoy
+    }
+    
+    /**
+     * Obtiene el nombre del día actual en español.
+     */
+    private fun obtenerDiaActual(): String {
+        val dias = arrayOf("Domingo", "Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado")
+        val calendario = java.util.Calendar.getInstance()
+        val diaSemana = calendario.get(java.util.Calendar.DAY_OF_WEEK)
+        return dias[diaSemana - 1]
+    }
+    
+    /**
      * Verifica si un alumno está inscrito en un grupo.
      * 
      * @param alumnoId ID del alumno
