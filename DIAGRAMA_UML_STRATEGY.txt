@@ -1,0 +1,287 @@
+═══════════════════════════════════════════════════════════════════════════════
+                    PATRÓN STRATEGY - DIAGRAMA UML ASCII
+                  Implementación en AsistenciaApp - AsistenciaCU
+═══════════════════════════════════════════════════════════════════════════════
+
+
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                           AsistenciaCU                                      │
+│                          (CONTEXT)                                          │
+├─────────────────────────────────────────────────────────────────────────────┤
+│ PROPIEDADES:                                                                │
+│ - asistenciaRepository: AsistenciaRepository                                │
+│ - _estrategia: IEstrategiaAsistencia?                                       │
+├─────────────────────────────────────────────────────────────────────────────┤
+│ MÉTODOS:                                                                    │
+│ + setEstrategia(estrategia: IEstrategiaAsistencia): void                    │
+│   ↳ Cambia la estrategia en tiempo de ejecución                            │
+│                                                                             │
+│ + marcarAsistencia(                                                         │
+│     alumnoId: Int,                                                          │
+│     grupoId: Int,                                                           │
+│     fecha: String,                                                          │
+│     horaMarcado: String,                                                    │
+│     horaInicio: String                                                      │
+│   ): ValidationResult                                                       │
+│   ↳ USA la estrategia para calcular el estado                              │
+│                                                                             │
+│ + obtenerAsistencias(alumnoId: Int): List<Asistencia>                      │
+│ + puedeMarcarAsistencia(alumnoId: Int, grupoId: Int): Boolean              │
+│ + validarDatosAsistencia(...): ValidationResult                            │
+└─────────────────────────────┬───────────────────────────────────────────────┘
+                              │
+                              │ usa / delega a
+                              ▼
+              ┌───────────────────────────────────┐
+              │       <<interface>>               │
+              │   IEstrategiaAsistencia           │  ◄───────── STRATEGY
+              │        (STRATEGY)                 │             (Interface)
+              ├───────────────────────────────────┤
+              │ MÉTODOS:                          │
+              │ + calcularEstado(                 │
+              │     horaMarcado: String,          │
+              │     horaInicio: String            │
+              │   ): String                       │
+              │   ↳ Retorna: "PRESENTE",          │
+              │              "RETRASO",           │
+              │              "FALTA"              │
+              └───────────────┬───────────────────┘
+                              △
+                              │ implementan
+                              │
+        ┌─────────────────────┼─────────────────────┐
+        │                     │                     │
+        │                     │                     │
+┌───────▼──────────┐  ┌───────▼──────────┐  ┌──────▼────────────┐
+│EstrategiaPresente│  │EstrategiaRetraso │  │  EstrategiaFalta  │
+│(ConcreteStrategy)│  │(ConcreteStrategy)│  │(ConcreteStrategy) │
+├──────────────────┤  ├──────────────────┤  ├───────────────────┤
+│+ calcularEstado()│  │+ calcularEstado()│  │+ calcularEstado() │
+│                  │  │                  │  │                   │
+│LÓGICA:           │  │LÓGICA:           │  │LÓGICA:            │
+│• 0-10 min        │  │• 0-10 min        │  │• 0-10 min         │
+│  → PRESENTE      │  │  → PRESENTE      │  │  → PRESENTE       │
+│• >10 min         │  │• 10-30 min       │  │• 10-30 min        │
+│  → PRESENTE      │  │  → RETRASO       │  │  → RETRASO        │
+│  (flexible)      │  │• >30 min         │  │• >30 min          │
+│                  │  │  → FALTA         │  │  → FALTA          │
+│                  │  │  (estándar)      │  │  (estricta)       │
+└──────────────────┘  └──────────────────┘  └───────────────────┘
+
+
+═══════════════════════════════════════════════════════════════════════════════
+                              FLUJO DE EJECUCIÓN
+═══════════════════════════════════════════════════════════════════════════════
+
+  1. UI / ViewModel llama a:
+     asistenciaCU.marcarAsistencia(1, 1, "2025-01-20", "08:25", "08:00")
+                                      ↓
+  2. AsistenciaCU valida los datos (ValidationResult)
+                                      ↓
+  3. AsistenciaCU verifica si puede marcar asistencia
+                                      ↓
+  4. AsistenciaCU delega el cálculo a la estrategia:
+     estado = _estrategia.calcularEstado("08:25", "08:00")
+                                      ↓
+  5. La estrategia ejecuta su algoritmo:
+     - EstrategiaPresente  → "PRESENTE"
+     - EstrategiaRetraso   → "RETRASO" (25 min tarde)
+     - EstrategiaFalta     → "RETRASO" (25 min tarde)
+                                      ↓
+  6. AsistenciaCU registra la asistencia con el estado calculado
+                                      ↓
+  7. Retorna ValidationResult.Success
+
+
+═══════════════════════════════════════════════════════════════════════════════
+                       CAMBIO DE ESTRATEGIA EN RUNTIME
+═══════════════════════════════════════════════════════════════════════════════
+
+┌──────────────────────────────────────────────────────────────────────────┐
+│  asistenciaCU.setEstrategia(EstrategiaPresente())                        │
+│       ↓                                                                  │
+│  _estrategia = EstrategiaPresente@1234                                   │
+│       ↓                                                                  │
+│  asistenciaCU.marcarAsistencia(..., "08:25", "08:00")                    │
+│       ↓                                                                  │
+│  estado = "PRESENTE" (política flexible)                                 │
+└──────────────────────────────────────────────────────────────────────────┘
+
+┌──────────────────────────────────────────────────────────────────────────┐
+│  asistenciaCU.setEstrategia(EstrategiaRetraso())                         │
+│       ↓                                                                  │
+│  _estrategia = EstrategiaRetraso@5678                                    │
+│       ↓                                                                  │
+│  asistenciaCU.marcarAsistencia(..., "08:25", "08:00")                    │
+│       ↓                                                                  │
+│  estado = "RETRASO" (política estándar)                                  │
+└──────────────────────────────────────────────────────────────────────────┘
+
+┌──────────────────────────────────────────────────────────────────────────┐
+│  asistenciaCU.setEstrategia(EstrategiaFalta())                           │
+│       ↓                                                                  │
+│  _estrategia = EstrategiaFalta@9012                                      │
+│       ↓                                                                  │
+│  asistenciaCU.marcarAsistencia(..., "08:35", "08:00")                    │
+│       ↓                                                                  │
+│  estado = "FALTA" (política estricta)                                    │
+└──────────────────────────────────────────────────────────────────────────┘
+
+
+═══════════════════════════════════════════════════════════════════════════════
+                          COMPARACIÓN DE ESTRATEGIAS
+═══════════════════════════════════════════════════════════════════════════════
+
+┌─────────────────┬──────────────────┬──────────────────┬──────────────────┐
+│  Diferencia     │EstrategiaPresente│EstrategiaRetraso │ EstrategiaFalta  │
+│  (minutos)      │   (Flexible)     │   (Estándar)     │   (Estricta)     │
+├─────────────────┼──────────────────┼──────────────────┼──────────────────┤
+│  -10 a 0        │    PRESENTE      │    PRESENTE      │    PRESENTE      │
+│  (antes)        │                  │                  │                  │
+├─────────────────┼──────────────────┼──────────────────┼──────────────────┤
+│  0 a 10         │    PRESENTE      │    PRESENTE      │    PRESENTE      │
+├─────────────────┼──────────────────┼──────────────────┼──────────────────┤
+│  10 a 30        │    PRESENTE      │    RETRASO       │    RETRASO       │
+├─────────────────┼──────────────────┼──────────────────┼──────────────────┤
+│  > 30           │    PRESENTE      │    FALTA         │    FALTA         │
+└─────────────────┴──────────────────┴──────────────────┴──────────────────┘
+
+
+═══════════════════════════════════════════════════════════════════════════════
+                              EJEMPLO DE USO
+═══════════════════════════════════════════════════════════════════════════════
+
+// Crear el caso de uso
+val db = AppDatabase.getInstance(context)
+val asistenciaRepository = AsistenciaRepository(db)
+val asistenciaCU = AsistenciaCU(asistenciaRepository)
+
+// ===== ESCENARIO 1: Materia con política flexible (Seminario) =====
+asistenciaCU.setEstrategia(EstrategiaPresente())
+
+asistenciaCU.marcarAsistencia(
+    alumnoId = 1,
+    grupoId = 1,
+    fecha = "2025-01-20",
+    horaMarcado = "08:35",  // 35 minutos tarde
+    horaInicio = "08:00"
+)
+// Resultado: ✅ PRESENTE (política flexible, siempre acepta)
+
+
+// ===== ESCENARIO 2: Materia estándar (Programación) =====
+asistenciaCU.setEstrategia(EstrategiaRetraso())
+
+asistenciaCU.marcarAsistencia(
+    alumnoId = 1,
+    grupoId = 2,
+    fecha = "2025-01-21",
+    horaMarcado = "08:15",  // 15 minutos tarde
+    horaInicio = "08:00"
+)
+// Resultado: ⚠️ RETRASO (entre 10 y 30 minutos)
+
+
+// ===== ESCENARIO 3: Materia estricta (Laboratorio) =====
+asistenciaCU.setEstrategia(EstrategiaFalta())
+
+asistenciaCU.marcarAsistencia(
+    alumnoId = 1,
+    grupoId = 3,
+    fecha = "2025-01-22",
+    horaMarcado = "08:35",  // 35 minutos tarde
+    horaInicio = "08:00"
+)
+// Resultado: ❌ FALTA (más de 30 minutos tarde)
+
+
+═══════════════════════════════════════════════════════════════════════════════
+                           VENTAJAS DEL PATRÓN
+═══════════════════════════════════════════════════════════════════════════════
+
+✅ ANTES (sin Strategy):
+   fun marcarAsistencia(...): ValidationResult {
+       val diferencia = calcularDiferencia(...)
+       
+       // ❌ Muchos if/else anidados
+       val estado = if (esMateriaSeminario) {
+           "PRESENTE"
+       } else if (esMateriaLaboratorio) {
+           if (diferencia > 30) "FALTA" 
+           else if (diferencia > 10) "RETRASO"
+           else "PRESENTE"
+       } else {
+           // ... más condicionales
+       }
+   }
+   
+   ❌ Difícil de mantener
+   ❌ Difícil de testear
+   ❌ Viola Open/Closed Principle
+
+✅ DESPUÉS (con Strategy):
+   fun marcarAsistencia(...): ValidationResult {
+       // ✅ Una sola línea, delega a la estrategia
+       val estado = _estrategia?.calcularEstado(horaMarcado, horaInicio)
+                    ?: EstrategiaRetraso().calcularEstado(horaMarcado, horaInicio)
+   }
+   
+   ✅ Fácil de mantener
+   ✅ Fácil de testear cada estrategia por separado
+   ✅ Cumple Open/Closed Principle
+   ✅ Cambio de comportamiento en runtime
+   ✅ Agregar nuevas estrategias sin modificar código existente
+
+
+═══════════════════════════════════════════════════════════════════════════════
+                        PRINCIPIOS SOLID APLICADOS
+═══════════════════════════════════════════════════════════════════════════════
+
+S - Single Responsibility:
+    ✅ Cada estrategia tiene UNA responsabilidad: calcular el estado
+
+O - Open/Closed:
+    ✅ Abierto a extensión: agregar nuevas estrategias sin modificar código
+    ✅ Cerrado a modificación: AsistenciaCU no cambia al agregar estrategias
+
+L - Liskov Substitution:
+    ✅ Todas las estrategias son intercambiables sin romper el código
+
+I - Interface Segregation:
+    ✅ Interface pequeña con un solo método relevante: calcularEstado()
+
+D - Dependency Inversion:
+    ✅ AsistenciaCU depende de IEstrategiaAsistencia (abstracción)
+    ✅ No depende de EstrategiaPresente, EstrategiaRetraso, etc. (concretos)
+
+
+═══════════════════════════════════════════════════════════════════════════════
+                         EXTENSIBILIDAD FUTURA
+═══════════════════════════════════════════════════════════════════════════════
+
+Agregar nuevas estrategias es FÁCIL:
+
+// Nueva estrategia para clases virtuales
+class EstrategiaVirtual : IEstrategiaAsistencia {
+    override fun calcularEstado(horaMarcado: String, horaInicio: String): String {
+        val diferencia = calcularDiferencia(horaMarcado, horaInicio)
+        return if (diferencia < 120) "PRESENTE" else "FALTA"  // 2 horas de margen
+    }
+}
+
+// Nueva estrategia híbrida
+class EstrategiaHibrida : IEstrategiaAsistencia {
+    override fun calcularEstado(horaMarcado: String, horaInicio: String): String {
+        // Lógica personalizada
+    }
+}
+
+// Uso inmediato sin modificar AsistenciaCU
+asistenciaCU.setEstrategia(EstrategiaVirtual())
+asistenciaCU.setEstrategia(EstrategiaHibrida())
+
+
+═══════════════════════════════════════════════════════════════════════════════
+                              FIN DEL DIAGRAMA
+═══════════════════════════════════════════════════════════════════════════════
+
