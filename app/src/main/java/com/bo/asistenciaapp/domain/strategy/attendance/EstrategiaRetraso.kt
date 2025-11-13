@@ -29,21 +29,31 @@ class EstrategiaRetraso : IEstrategiaAsistencia {
     }
     
     /**
-     * Calcula el estado como RETRASO si marca entre 10 y 30 minutos tarde.
+     * Calcula el estado como PRESENTE, RETRASO o FALTA según tolerancia configurable.
+     * 
+     * ⭐ PATRÓN STRATEGY CON DATOS DE BD:
+     * Ahora usa toleranciaMinutos obtenido de la tabla grupos (configurable por grupo)
+     * en lugar de constantes hardcodeadas.
      * 
      * Algoritmo:
      * 1. Convertir ambas horas a minutos desde medianoche
      * 2. Calcular la diferencia en minutos
-     * 3. Si diferencia > 10 y <= 30 minutos → RETRASO
-     * 4. Si diferencia <= 10 minutos → PRESENTE (llegó a tiempo con margen)
-     * 5. Si diferencia > 30 minutos → FALTA (llegó muy tarde)
+     * 3. Si diferencia <= toleranciaMinutos → PRESENTE
+     * 4. Si diferencia <= (toleranciaMinutos * 3) → RETRASO
+     * 5. Si diferencia > (toleranciaMinutos * 3) → FALTA
+     * 
+     * Ejemplo con tolerancia de 10 minutos:
+     * - 0-10 min → PRESENTE
+     * - 11-30 min → RETRASO
+     * - >30 min → FALTA
      * 
      * @param horaMarcado Hora en que marcó asistencia (HH:mm)
      * @param horaInicio Hora de inicio de clase (HH:mm)
-     * @return "RETRASO" si marca en el rango permitido, "PRESENTE" o "FALTA" según caso
+     * @param toleranciaMinutos Tolerancia obtenida de la BD (por defecto 10)
+     * @return "PRESENTE", "RETRASO" o "FALTA" según el caso
      */
-    override fun calcularEstado(horaMarcado: String, horaInicio: String): String {
-        Log.d(TAG, "Evaluando asistencia - Marcado: $horaMarcado, Inicio: $horaInicio")
+    override fun calcularEstado(horaMarcado: String, horaInicio: String, toleranciaMinutos: Int): String {
+        Log.d(TAG, "Evaluando asistencia - Marcado: $horaMarcado, Inicio: $horaInicio, Tolerancia: $toleranciaMinutos min")
         
         try {
             // Convertir horas a minutos desde medianoche
@@ -53,23 +63,26 @@ class EstrategiaRetraso : IEstrategiaAsistencia {
             // Calcular diferencia
             val diferencia = minutosMarcado - minutosInicio
             
-            Log.d(TAG, "Diferencia: $diferencia minutos")
+            // ⭐ Calcular límites basados en tolerancia de la BD
+            val limiteRetraso = toleranciaMinutos * 3  // Hasta 3x la tolerancia es retraso
+            
+            Log.d(TAG, "Diferencia: $diferencia minutos | Tolerancia: $toleranciaMinutos | Límite retraso: $limiteRetraso")
             
             // Lógica de la estrategia: RETRASO si está en el rango
             val estado = when {
-                diferencia <= MINUTOS_MIN_RETRASO -> {
+                diferencia <= toleranciaMinutos -> {
                     // Llegó a tiempo (dentro del margen de tolerancia)
-                    Log.d(TAG, "Llegó a tiempo (diferencia <= $MINUTOS_MIN_RETRASO min)")
+                    Log.d(TAG, "Llegó a tiempo (diferencia <= $toleranciaMinutos min)")
                     "PRESENTE"
                 }
-                diferencia <= MINUTOS_MAX_RETRASO -> {
-                    // Llegó con retraso (entre 10 y 30 minutos tarde)
-                    Log.d(TAG, "Llegó con retraso (diferencia entre $MINUTOS_MIN_RETRASO y $MINUTOS_MAX_RETRASO min)")
+                diferencia <= limiteRetraso -> {
+                    // Llegó con retraso (entre tolerancia y límite de retraso)
+                    Log.d(TAG, "Llegó con retraso (diferencia entre $toleranciaMinutos y $limiteRetraso min)")
                     "RETRASO"
                 }
                 else -> {
-                    // Llegó muy tarde (más de 30 minutos)
-                    Log.d(TAG, "Llegó muy tarde (diferencia > $MINUTOS_MAX_RETRASO min)")
+                    // Llegó muy tarde (más del límite de retraso)
+                    Log.d(TAG, "Llegó muy tarde (diferencia > $limiteRetraso min)")
                     "FALTA"
                 }
             }

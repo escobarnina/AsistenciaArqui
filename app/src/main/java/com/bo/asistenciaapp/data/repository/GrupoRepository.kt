@@ -67,6 +67,41 @@ class GrupoRepository(private val database: AppDatabase) {
     }
     
     /**
+     * Obtiene un grupo por su ID.
+     * 
+     * @param id ID del grupo
+     * @return Grupo si existe, null en caso contrario
+     */
+    fun obtenerPorId(id: Int): Grupo? {
+        return database.grupoDao.obtenerPorId(id)
+    }
+    
+    /**
+     * Actualiza la tolerancia de un grupo específico.
+     * 
+     * ⭐ PATRÓN STRATEGY - Configuración Dinámica:
+     * Este método permite modificar el parámetro de tolerancia que utilizan
+     * las estrategias de asistencia, haciendo el sistema completamente configurable
+     * desde la interfaz de usuario.
+     * 
+     * @param id ID del grupo a actualizar
+     * @param toleranciaMinutos Nueva tolerancia en minutos (0-60)
+     */
+    fun actualizarTolerancia(id: Int, toleranciaMinutos: Int) {
+        database.grupoDao.actualizarTolerancia(id, toleranciaMinutos)
+    }
+    
+    /**
+     * Verifica si existe un grupo con el ID especificado.
+     * 
+     * @param id ID del grupo a verificar
+     * @return true si el grupo existe, false en caso contrario
+     */
+    fun existeGrupo(id: Int): Boolean {
+        return database.grupoDao.existe(id)
+    }
+    
+    /**
      * Elimina un grupo del sistema.
      * 
      * @param id ID del grupo a eliminar

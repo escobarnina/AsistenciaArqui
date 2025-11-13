@@ -36,15 +36,16 @@ interface IEstrategiaAsistencia {
      * 
      * @param horaMarcado Hora en que el estudiante marcó asistencia (formato HH:mm)
      * @param horaInicio Hora de inicio de la clase (formato HH:mm)
+     * @param toleranciaMinutos ⭐ Tolerancia en minutos obtenida de la BD (configurable por grupo)
      * @return Estado de asistencia: "PRESENTE", "RETRASO" o "FALTA"
      * 
      * ## Ejemplo:
      * ```kotlin
-     * // Estudiante llega a las 08:05, clase inicia a las 08:00
-     * val estado = calcularEstado("08:05", "08:00")
+     * // Estudiante llega a las 08:05, clase inicia a las 08:00, tolerancia 10 minutos
+     * val estado = calcularEstado("08:05", "08:00", 10)
      * // El resultado dependerá de la estrategia concreta utilizada
      * ```
      */
-    fun calcularEstado(horaMarcado: String, horaInicio: String): String
+    fun calcularEstado(horaMarcado: String, horaInicio: String, toleranciaMinutos: Int = 10): String
 }
 

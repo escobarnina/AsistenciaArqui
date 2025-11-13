@@ -33,7 +33,7 @@ import com.bo.asistenciaapp.data.local.dao.UsuarioDao
  * - NO usar directamente desde casos de uso o ViewModels
  */
 class AppDatabase private constructor(context: Context) :
-    SQLiteOpenHelper(context.applicationContext, "asistenciadb.db", null, 16) {
+    SQLiteOpenHelper(context.applicationContext, "asistenciadb.db", null, 17) {  // ⭐ Versión incrementada para nueva columna tolerancia_minutos
 
     companion object {
         @Volatile

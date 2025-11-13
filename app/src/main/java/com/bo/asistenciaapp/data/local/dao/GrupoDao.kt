@@ -16,7 +16,7 @@ class GrupoDao(private val database: SQLiteDatabase) {
     fun obtenerTodos(): List<Grupo> {
         val lista = mutableListOf<Grupo>()
         database.rawQuery(
-            "SELECT id, materia_id, materia_nombre, docente_id, docente_nombre, semestre, gestion, capacidad, nro_inscritos, grupo FROM grupos",
+            "SELECT id, materia_id, materia_nombre, docente_id, docente_nombre, semestre, gestion, capacidad, nro_inscritos, grupo, tolerancia_minutos FROM grupos",
             null
         ).use { c ->
             while (c.moveToNext()) {
@@ -31,7 +31,8 @@ class GrupoDao(private val database: SQLiteDatabase) {
                         gestion = c.getInt(6),
                         capacidad = c.getInt(7),
                         nroInscritos = c.getInt(8),
-                        grupo = c.getString(9)
+                        grupo = c.getString(9),
+                        toleranciaMinutos = c.getInt(10)  // ⭐ NUEVO CAMPO
                     )
                 )
             }
@@ -73,7 +74,7 @@ class GrupoDao(private val database: SQLiteDatabase) {
     fun obtenerPorDocente(docenteId: Int): List<Grupo> {
         val lista = mutableListOf<Grupo>()
         database.rawQuery(
-            "SELECT id, materia_id, materia_nombre, docente_id, docente_nombre, semestre, gestion, capacidad, nro_inscritos, grupo FROM grupos WHERE docente_id=?",
+            "SELECT id, materia_id, materia_nombre, docente_id, docente_nombre, semestre, gestion, capacidad, nro_inscritos, grupo, tolerancia_minutos FROM grupos WHERE docente_id=?",
             arrayOf(docenteId.toString())
         ).use { c ->
             while (c.moveToNext()) {
@@ -88,12 +89,78 @@ class GrupoDao(private val database: SQLiteDatabase) {
                         gestion = c.getInt(6),
                         capacidad = c.getInt(7),
                         nroInscritos = c.getInt(8),
-                        grupo = c.getString(9)
+                        grupo = c.getString(9),
+                        toleranciaMinutos = c.getInt(10)  // ⭐ NUEVO CAMPO
                     )
                 )
             }
         }
         return lista
+    }
+    
+    /**
+     * Obtiene un grupo por su ID.
+     * ⭐ PATRÓN STRATEGY: Usado para obtener la tolerancia del grupo
+     */
+    fun obtenerPorId(id: Int): Grupo? {
+        database.rawQuery(
+            "SELECT id, materia_id, materia_nombre, docente_id, docente_nombre, semestre, gestion, capacidad, nro_inscritos, grupo, tolerancia_minutos FROM grupos WHERE id=?",
+            arrayOf(id.toString())
+        ).use { c ->
+            return if (c.moveToFirst()) {
+                Grupo(
+                    id = c.getInt(0),
+                    materiaId = c.getInt(1),
+                    materiaNombre = c.getString(2),
+                    docenteId = c.getInt(3),
+                    docenteNombre = c.getString(4),
+                    semestre = c.getInt(5),
+                    gestion = c.getInt(6),
+                    capacidad = c.getInt(7),
+                    nroInscritos = c.getInt(8),
+                    grupo = c.getString(9),
+                    toleranciaMinutos = c.getInt(10)  // ⭐ NUEVO CAMPO
+                )
+            } else {
+                null
+            }
+        }
+    }
+    
+    /**
+     * Actualiza la tolerancia de un grupo específico.
+     * 
+     * ⭐ PATRÓN STRATEGY - Configuración Dinámica:
+     * Este método permite modificar la tolerancia que utilizan las estrategias
+     * de asistencia, haciendo el sistema configurable desde la UI.
+     * 
+     * @param id ID del grupo a actualizar
+     * @param toleranciaMinutos Nueva tolerancia en minutos (0-60)
+     */
+    fun actualizarTolerancia(id: Int, toleranciaMinutos: Int) {
+        database.execSQL(
+            "UPDATE grupos SET tolerancia_minutos = ? WHERE id = ?",
+            arrayOf(toleranciaMinutos, id)
+        )
+    }
+    
+    /**
+     * Verifica si existe un grupo con el ID especificado.
+     * 
+     * @param id ID del grupo a verificar
+     * @return true si el grupo existe, false en caso contrario
+     */
+    fun existe(id: Int): Boolean {
+        database.rawQuery(
+            "SELECT COUNT(*) FROM grupos WHERE id = ?",
+            arrayOf(id.toString())
+        ).use { cursor ->
+            return if (cursor.moveToFirst()) {
+                cursor.getInt(0) > 0
+            } else {
+                false
+            }
+        }
     }
     
     /**

@@ -88,6 +88,14 @@ object DatabaseMigrations {
     
     /**
      * Crea la tabla de grupos.
+     * 
+     * ⭐ PATRÓN STRATEGY - Campo tolerancia_minutos:
+     * Define el tiempo máximo (en minutos) permitido para considerar un retraso
+     * antes de marcar FALTA. Este campo permite personalizar la política de 
+     * asistencia por grupo, haciendo flexible el cálculo del estado.
+     * 
+     * Valores permitidos: 0-60 minutos
+     * Valor por defecto: 10 minutos (estándar)
      */
     private fun createGruposTable(db: SQLiteDatabase) {
         db.execSQL(
@@ -103,6 +111,7 @@ object DatabaseMigrations {
                 gestion INTEGER NOT NULL,
                 capacidad INTEGER NOT NULL,
                 nro_inscritos INTEGER DEFAULT 0,
+                tolerancia_minutos INTEGER DEFAULT 10 NOT NULL CHECK(tolerancia_minutos >= 0 AND tolerancia_minutos <= 60),
                 FOREIGN KEY(materia_id) REFERENCES materias(id),
                 FOREIGN KEY(docente_id) REFERENCES usuarios(id)
             )

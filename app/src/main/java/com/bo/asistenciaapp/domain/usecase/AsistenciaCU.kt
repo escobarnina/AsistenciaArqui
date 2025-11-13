@@ -139,17 +139,22 @@ class AsistenciaCU(private val asistenciaRepository: AsistenciaRepository) {
             return ValidationResult.Error("No se puede marcar asistencia: no es el día/hora correcta o no está inscrito")
         }
         
-        // ⭐ PATRÓN STRATEGY: Delegar el cálculo del estado a la estrategia actual
+        // ⭐ PATRÓN STRATEGY CON DATOS DE BD:
+        // Obtener tolerancia del grupo desde la base de datos
+        val toleranciaMinutos = asistenciaRepository.obtenerToleranciaGrupo(grupoId)
+        Log.d(TAG, "Tolerancia obtenida del grupo $grupoId: $toleranciaMinutos minutos")
+        
+        // Delegar el cálculo del estado a la estrategia actual
         val estado = if (_estrategia != null) {
             Log.d(TAG, "Usando estrategia: ${_estrategia!!::class.simpleName}")
-            _estrategia!!.calcularEstado(horaMarcado, horaInicio)
+            _estrategia!!.calcularEstado(horaMarcado, horaInicio, toleranciaMinutos)
         } else {
             Log.w(TAG, "No hay estrategia definida, usando estrategia por defecto (EstrategiaRetraso)")
             val estrategiaDefault = EstrategiaRetraso()
-            estrategiaDefault.calcularEstado(horaMarcado, horaInicio)
+            estrategiaDefault.calcularEstado(horaMarcado, horaInicio, toleranciaMinutos)
         }
         
-        Log.d(TAG, "Estado calculado por la estrategia: $estado")
+        Log.d(TAG, "Estado calculado por la estrategia: $estado (tolerancia: $toleranciaMinutos min)")
         
         // Registrar asistencia en el repositorio
         asistenciaRepository.registrar(alumnoId, grupoId, fecha)

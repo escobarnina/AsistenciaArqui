@@ -17,6 +17,7 @@ import com.bo.asistenciaapp.data.local.AppDatabase
 import com.bo.asistenciaapp.data.local.UserSession
 import com.bo.asistenciaapp.data.repository.GrupoRepository
 import com.bo.asistenciaapp.domain.model.Grupo
+import com.bo.asistenciaapp.domain.usecase.ConfigurarGrupoCU
 import com.bo.asistenciaapp.presentation.common.UserLayout
 
 /**
@@ -42,10 +43,14 @@ fun VerGruposDocenteScreen(
     // Inicializar dependencias
     val database = remember { AppDatabase.getInstance(context) }
     val grupoRepository = remember { GrupoRepository(database) }
+    val configurarGrupoCU = remember { ConfigurarGrupoCU(grupoRepository) }
     
     // Obtener grupos del docente
     val gruposDocente = remember { mutableStateListOf<Grupo>() }
     val isLoading = remember { mutableStateOf(true) }
+    
+    // Estado para el diálogo de configuración
+    var grupoSeleccionado by remember { mutableStateOf<Grupo?>(null) }
     
     LaunchedEffect(docenteId) {
         try {
@@ -67,7 +72,23 @@ fun VerGruposDocenteScreen(
             paddingValues = paddingValues,
             grupos = gruposDocente,
             isLoading = isLoading.value,
-            onVerEstudiantes = onVerEstudiantes
+            onVerEstudiantes = onVerEstudiantes,
+            onConfigurarTolerancia = { grupo -> grupoSeleccionado = grupo }
+        )
+    }
+    
+    // Mostrar diálogo de configuración si hay un grupo seleccionado
+    grupoSeleccionado?.let { grupo ->
+        ConfigurarToleranciaDialog(
+            grupo = grupo,
+            configurarGrupoCU = configurarGrupoCU,
+            onDismiss = { grupoSeleccionado = null },
+            onSuccess = {
+                // Recargar grupos para mostrar la tolerancia actualizada
+                val todosGrupos = grupoRepository.obtenerPorDocente(docenteId)
+                gruposDocente.clear()
+                gruposDocente.addAll(todosGrupos)
+            }
         )
     }
 }
@@ -86,7 +107,8 @@ private fun VerGruposDocenteContent(
     paddingValues: PaddingValues,
     grupos: List<Grupo>,
     isLoading: Boolean,
-    onVerEstudiantes: (Int) -> Unit
+    onVerEstudiantes: (Int) -> Unit,
+    onConfigurarTolerancia: (Grupo) -> Unit
 ) {
     when {
         isLoading -> {
@@ -99,7 +121,8 @@ private fun VerGruposDocenteContent(
             VerGruposList(
                 paddingValues = paddingValues,
                 grupos = grupos,
-                onVerEstudiantes = onVerEstudiantes
+                onVerEstudiantes = onVerEstudiantes,
+                onConfigurarTolerancia = onConfigurarTolerancia
             )
         }
     }
@@ -114,7 +137,8 @@ private fun VerGruposDocenteContent(
 private fun VerGruposList(
     paddingValues: PaddingValues,
     grupos: List<Grupo>,
-    onVerEstudiantes: (Int) -> Unit
+    onVerEstudiantes: (Int) -> Unit,
+    onConfigurarTolerancia: (Grupo) -> Unit
 ) {
     LazyColumn(
         modifier = Modifier
@@ -126,7 +150,8 @@ private fun VerGruposList(
         items(grupos) { grupo ->
             VerGrupoCard(
                 grupo = grupo,
-                onClick = { onVerEstudiantes(grupo.id) }
+                onClick = { onVerEstudiantes(grupo.id) },
+                onConfigurarTolerancia = { onConfigurarTolerancia(grupo) }
             )
         }
     }
@@ -140,14 +165,15 @@ private fun VerGruposList(
  * Card de grupo del docente.
  * 
  * Molécula que muestra la información del grupo y permite navegar a estudiantes.
+ * ⭐ PATRÓN STRATEGY: Incluye botón para configurar tolerancia de asistencia.
  */
 @Composable
 private fun VerGrupoCard(
     grupo: Grupo,
-    onClick: () -> Unit
+    onClick: () -> Unit,
+    onConfigurarTolerancia: () -> Unit
 ) {
     Card(
-        onClick = onClick,
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(
@@ -243,13 +269,73 @@ private fun VerGrupoCard(
                     )
                 }
             }
+        }
+        
+        // Fila inferior con botones de acción y tolerancia
+        HorizontalDivider(
+            modifier = Modifier.padding(horizontal = 16.dp),
+            color = MaterialTheme.colorScheme.outlineVariant
+        )
+        
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp, vertical = 12.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            // Badge de tolerancia
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(6.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Timer,
+                    contentDescription = null,
+                    modifier = Modifier.size(16.dp),
+                    tint = MaterialTheme.colorScheme.tertiary
+                )
+                Text(
+                    text = "Tolerancia: ${grupo.toleranciaMinutos} min",
+                    style = MaterialTheme.typography.bodySmall,
+                    fontWeight = FontWeight.Medium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
             
-            Icon(
-                imageVector = Icons.Default.ChevronRight,
-                contentDescription = null,
-                tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
-                modifier = Modifier.size(24.dp)
-            )
+            // Botones de acción
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                // Botón para configurar tolerancia
+                IconButton(
+                    onClick = onConfigurarTolerancia,
+                    modifier = Modifier.size(36.dp)
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Settings,
+                        contentDescription = "Configurar Tolerancia",
+                        modifier = Modifier.size(20.dp),
+                        tint = MaterialTheme.colorScheme.primary
+                    )
+                }
+                
+                // Botón para ver estudiantes
+                FilledIconButton(
+                    onClick = onClick,
+                    modifier = Modifier.size(36.dp),
+                    colors = IconButtonDefaults.filledIconButtonColors(
+                        containerColor = MaterialTheme.colorScheme.primaryContainer
+                    )
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.ChevronRight,
+                        contentDescription = "Ver Estudiantes",
+                        modifier = Modifier.size(20.dp),
+                        tint = MaterialTheme.colorScheme.onPrimaryContainer
+                    )
+                }
+            }
         }
     }
 }

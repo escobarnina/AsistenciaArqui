@@ -20,6 +20,8 @@ package com.bo.asistenciaapp.domain.model
  * - `gestion`: Año de gestión académica (ej: 2025)
  * - `capacidad`: Capacidad máxima de estudiantes en el grupo
  * - `nroInscritos`: Número actual de estudiantes inscritos en el grupo
+ * - `toleranciaMinutos`: ⭐ PATRÓN STRATEGY - Tiempo máximo (en minutos) permitido 
+ *   para considerar un retraso antes de marcar FALTA. Valores: 0-60. Por defecto: 10
  * 
  * Ejemplo de uso:
  * ```kotlin
@@ -33,7 +35,8 @@ package com.bo.asistenciaapp.domain.model
  *     semestre = 1,
  *     gestion = 2025,
  *     capacidad = 30,
- *     nroInscritos = 15
+ *     nroInscritos = 15,
+ *     toleranciaMinutos = 10
  * )
  * ```
  * 
@@ -49,6 +52,7 @@ package com.bo.asistenciaapp.domain.model
  * - La capacidad debe ser mayor a 0 y típicamente entre 1 y 100
  * - El número de inscritos no puede exceder la capacidad
  * - El año de gestión debe ser válido (año actual ± 5 años)
+ * - La tolerancia debe estar entre 0 y 60 minutos
  */
 data class Grupo(
     val id: Int,
@@ -60,5 +64,6 @@ data class Grupo(
     val semestre: Int,
     val gestion: Int,
     val capacidad: Int,
-    val nroInscritos: Int
+    val nroInscritos: Int,
+    val toleranciaMinutos: Int = 10  // ⭐ Valor por defecto: 10 minutos
 )

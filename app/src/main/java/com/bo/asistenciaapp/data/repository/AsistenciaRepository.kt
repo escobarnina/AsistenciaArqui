@@ -66,5 +66,20 @@ class AsistenciaRepository(private val database: AppDatabase) {
     fun obtenerPorAlumnoYGrupo(alumnoId: Int, grupoId: Int): List<Asistencia> {
         return database.asistenciaDao.obtenerPorAlumnoYGrupo(alumnoId, grupoId)
     }
+    
+    /**
+     * Obtiene la tolerancia en minutos configurada para un grupo.
+     * 
+     * ⭐ PATRÓN STRATEGY CON DATOS DE BD:
+     * Este método permite obtener la tolerancia desde la tabla grupos,
+     * haciendo que el patrón Strategy sea configurable por datos.
+     * 
+     * @param grupoId ID del grupo
+     * @return Tolerancia en minutos (por defecto 10 si el grupo no existe)
+     */
+    fun obtenerToleranciaGrupo(grupoId: Int): Int {
+        val grupo = database.grupoDao.obtenerPorId(grupoId)
+        return grupo?.toleranciaMinutos ?: 10  // Valor por defecto si no existe el grupo
+    }
 }
 
