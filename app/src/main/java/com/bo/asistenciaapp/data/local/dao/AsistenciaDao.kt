@@ -155,5 +155,25 @@ class AsistenciaDao(private val database: SQLiteDatabase) {
         }
         return lista
     }
+    
+    /**
+     * Verifica si un alumno está inscrito en un grupo (tiene boleta).
+     * 
+     * @param alumnoId ID del alumno
+     * @param grupoId ID del grupo
+     * @return true si está inscrito, false en caso contrario
+     */
+    fun estaInscrito(alumnoId: Int, grupoId: Int): Boolean {
+        database.rawQuery(
+            """
+                SELECT 1
+                FROM boletas
+                WHERE alumno_id = ? AND grupo_id = ?
+            """.trimIndent(),
+            arrayOf(alumnoId.toString(), grupoId.toString())
+        ).use { c ->
+            return c.moveToFirst()
+        }
+    }
 }
 

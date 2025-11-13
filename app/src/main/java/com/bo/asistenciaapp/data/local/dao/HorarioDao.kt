@@ -58,6 +58,61 @@ class HorarioDao(private val database: SQLiteDatabase) {
     }
     
     /**
+     * Obtiene los horarios de un grupo específico.
+     * 
+     * @param grupoId ID del grupo
+     * @return Lista de horarios del grupo
+     */
+    fun obtenerPorGrupo(grupoId: Int): List<Horario> {
+        val lista = mutableListOf<Horario>()
+        database.rawQuery(
+            """
+                SELECT 
+                h.id, 
+                h.grupo_id, 
+                h.dia, 
+                h.hora_inicio, 
+                h.hora_fin, 
+                g.materia_nombre,
+                g.grupo
+                FROM 
+                horarios h 
+                JOIN grupos g ON h.grupo_id = g.id 
+                WHERE h.grupo_id = ?
+                ORDER BY h.dia, h.hora_inicio
+            """.trimIndent(),
+            arrayOf(grupoId.toString())
+        ).use { c ->
+            while (c.moveToNext()) {
+                lista.add(
+                    Horario(
+                        id = c.getInt(0),
+                        grupoId = c.getInt(1),
+                        dia = c.getString(2),
+                        horaInicio = c.getString(3),
+                        horaFin = c.getString(4),
+                        materia = c.getString(5),
+                        grupo = c.getString(6)
+                    )
+                )
+            }
+        }
+        return lista
+    }
+    
+    /**
+     * Elimina todos los horarios de un grupo.
+     * 
+     * @param grupoId ID del grupo
+     */
+    fun eliminarPorGrupo(grupoId: Int) {
+        database.execSQL(
+            "DELETE FROM horarios WHERE grupo_id = ?",
+            arrayOf(grupoId)
+        )
+    }
+    
+    /**
      * Elimina un horario por ID.
      */
     fun eliminar(id: Int) {

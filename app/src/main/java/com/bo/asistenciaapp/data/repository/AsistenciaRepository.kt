@@ -81,5 +81,16 @@ class AsistenciaRepository(private val database: AppDatabase) {
         val grupo = database.grupoDao.obtenerPorId(grupoId)
         return grupo?.toleranciaMinutos ?: 10  // Valor por defecto si no existe el grupo
     }
+    
+    /**
+     * Verifica si un alumno está inscrito en un grupo.
+     * 
+     * @param alumnoId ID del alumno
+     * @param grupoId ID del grupo
+     * @return true si está inscrito, false en caso contrario
+     */
+    fun estaInscrito(alumnoId: Int, grupoId: Int): Boolean {
+        return database.asistenciaDao.estaInscrito(alumnoId, grupoId)
+    }
 }
 

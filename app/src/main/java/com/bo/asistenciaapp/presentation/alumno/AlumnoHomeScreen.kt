@@ -110,6 +110,13 @@ private fun AlumnoHomeMenu(
             onClick = { navController.navigate("gestionarAsistencias") }
         )
         
+        AlumnoActionCard(
+            title = "🧪 Probar Patrón Strategy",
+            description = "Modo de prueba sin restricciones de horario",
+            icon = Icons.Default.Science,
+            onClick = { navController.navigate("marcarAsistenciaTest") }
+        )
+        
         Spacer(modifier = Modifier.height(8.dp))
         HorizontalDivider(
             modifier = Modifier.padding(vertical = 8.dp),

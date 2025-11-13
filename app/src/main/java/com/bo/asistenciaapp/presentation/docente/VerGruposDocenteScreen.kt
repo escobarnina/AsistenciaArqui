@@ -16,8 +16,10 @@ import androidx.compose.ui.unit.dp
 import com.bo.asistenciaapp.data.local.AppDatabase
 import com.bo.asistenciaapp.data.local.UserSession
 import com.bo.asistenciaapp.data.repository.GrupoRepository
+import com.bo.asistenciaapp.data.repository.HorarioRepository
 import com.bo.asistenciaapp.domain.model.Grupo
 import com.bo.asistenciaapp.domain.usecase.ConfigurarGrupoCU
+import com.bo.asistenciaapp.domain.usecase.ConfigurarHorarioCU
 import com.bo.asistenciaapp.presentation.common.UserLayout
 
 /**
@@ -43,7 +45,9 @@ fun VerGruposDocenteScreen(
     // Inicializar dependencias
     val database = remember { AppDatabase.getInstance(context) }
     val grupoRepository = remember { GrupoRepository(database) }
+    val horarioRepository = remember { HorarioRepository(database) }
     val configurarGrupoCU = remember { ConfigurarGrupoCU(grupoRepository) }
+    val configurarHorarioCU = remember { ConfigurarHorarioCU(horarioRepository) }
     
     // Obtener grupos del docente
     val gruposDocente = remember { mutableStateListOf<Grupo>() }
@@ -51,6 +55,7 @@ fun VerGruposDocenteScreen(
     
     // Estado para el diálogo de configuración
     var grupoSeleccionado by remember { mutableStateOf<Grupo?>(null) }
+    var grupoParaHorario by remember { mutableStateOf<Grupo?>(null) }
     
     LaunchedEffect(docenteId) {
         try {
@@ -73,11 +78,12 @@ fun VerGruposDocenteScreen(
             grupos = gruposDocente,
             isLoading = isLoading.value,
             onVerEstudiantes = onVerEstudiantes,
-            onConfigurarTolerancia = { grupo -> grupoSeleccionado = grupo }
+            onConfigurarTolerancia = { grupo -> grupoSeleccionado = grupo },
+            onConfigurarHorario = { grupo -> grupoParaHorario = grupo }
         )
     }
     
-    // Mostrar diálogo de configuración si hay un grupo seleccionado
+    // Mostrar diálogo de configuración de tolerancia si hay un grupo seleccionado
     grupoSeleccionado?.let { grupo ->
         ConfigurarToleranciaDialog(
             grupo = grupo,
@@ -89,6 +95,16 @@ fun VerGruposDocenteScreen(
                 gruposDocente.clear()
                 gruposDocente.addAll(todosGrupos)
             }
+        )
+    }
+    
+    // Mostrar diálogo de configuración de horarios
+    grupoParaHorario?.let { grupo ->
+        ConfigurarHorarioDialog(
+            grupo = grupo,
+            configurarHorarioCU = configurarHorarioCU,
+            onDismiss = { grupoParaHorario = null },
+            onSuccess = { }
         )
     }
 }
@@ -108,7 +124,8 @@ private fun VerGruposDocenteContent(
     grupos: List<Grupo>,
     isLoading: Boolean,
     onVerEstudiantes: (Int) -> Unit,
-    onConfigurarTolerancia: (Grupo) -> Unit
+    onConfigurarTolerancia: (Grupo) -> Unit,
+    onConfigurarHorario: (Grupo) -> Unit
 ) {
     when {
         isLoading -> {
@@ -122,7 +139,8 @@ private fun VerGruposDocenteContent(
                 paddingValues = paddingValues,
                 grupos = grupos,
                 onVerEstudiantes = onVerEstudiantes,
-                onConfigurarTolerancia = onConfigurarTolerancia
+                onConfigurarTolerancia = onConfigurarTolerancia,
+                onConfigurarHorario = onConfigurarHorario
             )
         }
     }
@@ -138,7 +156,8 @@ private fun VerGruposList(
     paddingValues: PaddingValues,
     grupos: List<Grupo>,
     onVerEstudiantes: (Int) -> Unit,
-    onConfigurarTolerancia: (Grupo) -> Unit
+    onConfigurarTolerancia: (Grupo) -> Unit,
+    onConfigurarHorario: (Grupo) -> Unit
 ) {
     LazyColumn(
         modifier = Modifier
@@ -151,7 +170,8 @@ private fun VerGruposList(
             VerGrupoCard(
                 grupo = grupo,
                 onClick = { onVerEstudiantes(grupo.id) },
-                onConfigurarTolerancia = { onConfigurarTolerancia(grupo) }
+                onConfigurarTolerancia = { onConfigurarTolerancia(grupo) },
+                onConfigurarHorario = { onConfigurarHorario(grupo) }
             )
         }
     }
@@ -171,7 +191,8 @@ private fun VerGruposList(
 private fun VerGrupoCard(
     grupo: Grupo,
     onClick: () -> Unit,
-    onConfigurarTolerancia: () -> Unit
+    onConfigurarTolerancia: () -> Unit,
+    onConfigurarHorario: () -> Unit
 ) {
     Card(
         modifier = Modifier.fillMaxWidth(),
@@ -307,6 +328,19 @@ private fun VerGrupoCard(
             Row(
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
+                // Botón para configurar horarios
+                IconButton(
+                    onClick = onConfigurarHorario,
+                    modifier = Modifier.size(36.dp)
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Schedule,
+                        contentDescription = "Configurar Horarios",
+                        modifier = Modifier.size(20.dp),
+                        tint = MaterialTheme.colorScheme.tertiary
+                    )
+                }
+                
                 // Botón para configurar tolerancia
                 IconButton(
                     onClick = onConfigurarTolerancia,

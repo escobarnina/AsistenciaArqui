@@ -35,6 +35,25 @@ class HorarioRepository(private val database: AppDatabase) {
     }
     
     /**
+     * Obtiene los horarios de un grupo específico.
+     * 
+     * @param grupoId ID del grupo
+     * @return Lista de horarios del grupo
+     */
+    fun obtenerPorGrupo(grupoId: Int): List<Horario> {
+        return database.horarioDao.obtenerPorGrupo(grupoId)
+    }
+    
+    /**
+     * Elimina todos los horarios de un grupo.
+     * 
+     * @param grupoId ID del grupo
+     */
+    fun eliminarPorGrupo(grupoId: Int) {
+        database.horarioDao.eliminarPorGrupo(grupoId)
+    }
+    
+    /**
      * Elimina un horario del sistema.
      * 
      * @param id ID del horario a eliminar
