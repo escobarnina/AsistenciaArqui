@@ -5,12 +5,17 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
-import androidx.compose.runtime.Composable
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import com.bo.asistenciaapp.data.local.AppDatabase
+import com.bo.asistenciaapp.data.local.UserSession
+import com.bo.asistenciaapp.data.repository.AsistenciaRepository
+import com.bo.asistenciaapp.domain.usecase.ExportarAsistenciaCU
 import com.bo.asistenciaapp.presentation.common.HomeLayout
 
 /**
@@ -19,6 +24,7 @@ import com.bo.asistenciaapp.presentation.common.HomeLayout
  * Muestra las opciones disponibles para el docente:
  * - Ver sus grupos asignados
  * - Marcar asistencias de estudiantes
+ * - Exportar asistencias (usando Patrón Adapter)
  * 
  * Arquitectura: Componentes organizados siguiendo principios de Atomic Design
  * - Atoms: Elementos básicos (Iconos, Textos)
@@ -35,13 +41,60 @@ fun DocenteHomeScreen(
     onVerGrupos: () -> Unit,
     onMarcarAsistencias: () -> Unit
 ) {
+    val context = LocalContext.current
+    
+    // Inicializar dependencias para exportación (Patrón Adapter)
+    val db = remember { AppDatabase.getInstance(context) }
+    val asistenciaRepository = remember { AsistenciaRepository(db) }
+    val exportarCU = remember { ExportarAsistenciaCU(asistenciaRepository) }
+    
+    // Obtener sesión del usuario para el ID del docente
+    val userSession = remember { UserSession(context) }
+    val idDocente = userSession.getUserId()
+    
+    // Estado para controlar el diálogo de exportación
+    var mostrarDialogoExportar by remember { mutableStateOf(false) }
+    var grupoSeleccionadoId by remember { mutableStateOf<Int?>(null) }
+    
     HomeLayout { paddingValues ->
         DocenteHomeContent(
             paddingValues = paddingValues,
             onLogout = onLogout,
             onVerGrupos = onVerGrupos,
-            onMarcarAsistencias = onMarcarAsistencias
+            onMarcarAsistencias = onMarcarAsistencias,
+            onExportarAsistencias = {
+                // Al hacer clic, necesitamos seleccionar un grupo primero
+                // Por ahora, abrimos el diálogo directamente
+                // TODO: En el futuro, mostrar selector de grupos
+                mostrarDialogoExportar = true
+            }
         )
+    }
+    
+    // Diálogo de exportación (Patrón Adapter)
+    if (mostrarDialogoExportar) {
+        // Obtener los grupos del docente
+        val grupos = remember { db.grupoDao.obtenerPorDocente(idDocente) }
+        
+        if (grupos.isNotEmpty()) {
+            ExportarAsistenciasDialog(
+                idGrupo = grupos.first().id, // Primer grupo por defecto
+                exportarCU = exportarCU,
+                onDismiss = { mostrarDialogoExportar = false }
+            )
+        } else {
+            // Mostrar mensaje si no hay grupos
+            AlertDialog(
+                onDismissRequest = { mostrarDialogoExportar = false },
+                title = { Text("Sin grupos asignados") },
+                text = { Text("No tienes grupos asignados para exportar asistencias.") },
+                confirmButton = {
+                    TextButton(onClick = { mostrarDialogoExportar = false }) {
+                        Text("Entendido")
+                    }
+                }
+            )
+        }
     }
 }
 
@@ -59,7 +112,8 @@ private fun DocenteHomeContent(
     paddingValues: PaddingValues,
     onLogout: () -> Unit,
     onVerGrupos: () -> Unit,
-    onMarcarAsistencias: () -> Unit
+    onMarcarAsistencias: () -> Unit,
+    onExportarAsistencias: () -> Unit
 ) {
     Column(
         modifier = Modifier
@@ -74,6 +128,7 @@ private fun DocenteHomeContent(
         DocenteHomeMenu(
             onVerGrupos = onVerGrupos,
             onMarcarAsistencias = onMarcarAsistencias,
+            onExportarAsistencias = onExportarAsistencias,
             onLogout = onLogout
         )
     }
@@ -88,6 +143,7 @@ private fun DocenteHomeContent(
 private fun DocenteHomeMenu(
     onVerGrupos: () -> Unit,
     onMarcarAsistencias: () -> Unit,
+    onExportarAsistencias: () -> Unit,
     onLogout: () -> Unit
 ) {
     Column(
@@ -106,6 +162,14 @@ private fun DocenteHomeMenu(
             description = "Registrar asistencia de estudiantes",
             icon = Icons.Default.CheckCircle,
             onClick = onMarcarAsistencias
+        )
+        
+        // ⭐ NUEVO: Botón de Exportar Asistencias (Patrón Adapter)
+        DocenteActionCard(
+            title = "Exportar Asistencias",
+            description = "Generar reportes en Excel o PDF",
+            icon = Icons.Default.FileDownload,
+            onClick = onExportarAsistencias
         )
         
         Spacer(modifier = Modifier.height(8.dp))

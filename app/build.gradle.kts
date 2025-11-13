@@ -72,4 +72,8 @@ dependencies {
 
     // --- NUEVO: navegacion
     implementation("androidx.navigation:navigation-compose:2.7.0")
+
+    // --- NUEVO: Apache POI para exportación a Excel ---
+    implementation("org.apache.poi:poi:5.2.3")
+    implementation("org.apache.poi:poi-ooxml:5.2.3")
 }
