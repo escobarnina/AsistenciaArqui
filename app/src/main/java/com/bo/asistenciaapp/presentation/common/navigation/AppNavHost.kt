@@ -1,7 +1,11 @@
 package com.bo.asistenciaapp.presentation.common.navigation
 
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.LocalContext
 import androidx.navigation.NavGraphBuilder
 import androidx.navigation.compose.NavHost
@@ -45,42 +49,57 @@ fun AppNavHost() {
     val context = LocalContext.current
     val session = remember { UserSession(context) }
 
-    // Obtener información de la sesión del usuario
-    val userId = session.getUserId()
-    val userRol = session.getUserRol()
+    // Obtener información de la sesión del usuario de forma reactiva
+    // Usamos mutableStateOf para que se actualice cuando cambie la sesión
+    var userId by remember { mutableStateOf(session.getUserId()) }
+    var userRol by remember { mutableStateOf(session.getUserRol()) }
+
+    // Función para actualizar el estado de la sesión
+    val updateSessionState = {
+        userId = session.getUserId()
+        userRol = session.getUserRol()
+    }
 
     // Determinar la pantalla inicial según la sesión
-    val startDestination = determineStartDestination(userId, userRol)
+    // Se recalcula cada vez que cambian userId o userRol
+    val startDestination = remember(userId, userRol) {
+        determineStartDestination(userId, userRol)
+    }
 
-    NavHost(navController = navController, startDestination = startDestination) {
+    NavHost(
+        navController = navController, 
+        startDestination = startDestination
+    ) {
         // Rutas de autenticación
         LoginRoutes(
             navController = navController,
-            builder = this
+            builder = this,
+            session = session,
+            onSessionChanged = updateSessionState
         )
         
         // Rutas de administrador
         AdminRoutes(
             navController = navController,
             session = session,
-            userId = userId,
-            builder = this
+            builder = this,
+            onLogout = updateSessionState
         )
         
         // Rutas de docente
         DocenteRoutes(
             navController = navController,
             session = session,
-            userId = userId,
-            builder = this
+            builder = this,
+            onLogout = updateSessionState
         )
         
         // Rutas de alumno
         AlumnoRoutes(
             navController = navController,
             session = session,
-            userId = userId,
-            builder = this
+            builder = this,
+            onLogout = updateSessionState
         )
     }
 }
@@ -96,11 +115,16 @@ fun AppNavHost() {
  */
 private fun LoginRoutes(
     navController: androidx.navigation.NavHostController,
-    builder: NavGraphBuilder
+    builder: NavGraphBuilder,
+    session: UserSession,
+    onSessionChanged: () -> Unit
 ) {
     builder.composable(NavRoutes.Login) {
         LoginScreen(
             onLoginSuccess = { usuario ->
+                // La sesión ya se guardó en LoginScreen, actualizar el estado local
+                onSessionChanged()
+                // Navegar a la pantalla home correspondiente
                 navigateToRoleHome(navController, usuario.rol)
             }
         )
@@ -115,13 +139,14 @@ private fun LoginRoutes(
 private fun AdminRoutes(
     navController: androidx.navigation.NavHostController,
     session: UserSession,
-    userId: Int,
-    builder: NavGraphBuilder
+    builder: NavGraphBuilder,
+    onLogout: () -> Unit
 ) {
     builder.composable(NavRoutes.AdminHome) {
         AdminHomeScreen(
             onLogout = {
                 handleLogout(navController, session)
+                onLogout() // Actualizar el estado después del logout
             },
             onGestionarUsuarios = { navController.navigate(NavRoutes.GestionUsuarios) },
             onGestionarMaterias = { navController.navigate(NavRoutes.GestionMaterias) },
@@ -156,6 +181,8 @@ private fun AdminRoutes(
     }
     
     builder.composable(NavRoutes.GestionarInscripciones) {
+        // Obtener userId dinámicamente de la sesión
+        val userId = session.getUserId()
         GestionarInscripciones(
             alumnoId = userId,
             semestreActual = 2,
@@ -173,13 +200,14 @@ private fun AdminRoutes(
 private fun DocenteRoutes(
     navController: androidx.navigation.NavHostController,
     session: UserSession,
-    userId: Int,
-    builder: NavGraphBuilder
+    builder: NavGraphBuilder,
+    onLogout: () -> Unit
 ) {
     builder.composable(NavRoutes.DocenteHome) {
         DocenteHomeScreen(
             onLogout = {
                 handleLogout(navController, session)
+                onLogout() // Actualizar el estado después del logout
             },
             onVerGrupos = { navController.navigate(NavRoutes.DocenteGrupos) }
         )
@@ -223,14 +251,15 @@ private fun DocenteRoutes(
 private fun AlumnoRoutes(
     navController: androidx.navigation.NavHostController,
     session: UserSession,
-    userId: Int,
-    builder: NavGraphBuilder
+    builder: NavGraphBuilder,
+    onLogout: () -> Unit
 ) {
     builder.composable(NavRoutes.AlumnoHome) {
         AlumnoHomeScreen(
             navController = navController,
             onLogout = {
                 handleLogout(navController, session)
+                onLogout() // Actualizar el estado después del logout
             },
             onGestionarInscripciones = { 
                 navController.navigate(NavRoutes.GestionarInscripciones) 
@@ -242,6 +271,8 @@ private fun AlumnoRoutes(
     }
     
     builder.composable(NavRoutes.GestionarInscripciones) {
+        // Obtener userId dinámicamente de la sesión
+        val userId = session.getUserId()
         GestionarInscripciones(
             alumnoId = userId,
             semestreActual = 2,
@@ -251,6 +282,8 @@ private fun AlumnoRoutes(
     }
     
     builder.composable(NavRoutes.VerBoleta) {
+        // Obtener userId dinámicamente de la sesión
+        val userId = session.getUserId()
         VerBoletaScreen(
             alumnoId = userId,
             onBack = { navController.popBackStack() }
@@ -314,6 +347,7 @@ private fun handleLogout(
     navController: androidx.navigation.NavHostController,
     session: UserSession
 ) {
+    // Limpiar la sesión primero
     session.clear()
     // Limpiar todo el back stack y navegar a Login
     // Usamos popUpTo con el startDestination para limpiar todo el stack
@@ -325,6 +359,8 @@ private fun handleLogout(
         // Limpiar el back stack completamente
         restoreState = false
     }
+    // Nota: El NavHost se recreará automáticamente debido al key basado en userId/userRol
+    // que ahora será -1 y null, forzando la recreación con el startDestination correcto
 }
 
 // ============================================================================
