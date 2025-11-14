@@ -120,20 +120,26 @@ private fun GestionarAsistenciaContent(
     uiState: AsistenciaUiState,
     onMarcarAsistencia: (Int) -> Unit
 ) {
-    Column(
+    LazyColumn(
         modifier = Modifier
             .fillMaxSize()
-            .padding(paddingValues)
-            .padding(16.dp),
+            .padding(paddingValues),
+        contentPadding = PaddingValues(16.dp),
         verticalArrangement = Arrangement.spacedBy(24.dp)
     ) {
-        AsistenciaGruposSection(
-            grupos = grupos,
-            uiState = uiState,
-            onMarcarAsistencia = onMarcarAsistencia
-        )
+        // Sección de grupos disponibles
+        item {
+            AsistenciaGruposSection(
+                grupos = grupos,
+                uiState = uiState,
+                onMarcarAsistencia = onMarcarAsistencia
+            )
+        }
         
-        AsistenciaHistorialSection(asistencias = asistencias)
+        // Sección de historial
+        item {
+            AsistenciaHistorialSection(asistencias = asistencias)
+        }
     }
 }
 
@@ -176,10 +182,10 @@ private fun AsistenciaGruposSection(
                 message = "No tienes grupos disponibles"
             )
         } else {
-            LazyColumn(
+            Column(
                 verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                items(grupos) { grupo ->
+                grupos.forEach { grupo ->
                     AsistenciaGrupoCard(
                         grupo = grupo,
                         isLoading = uiState is AsistenciaUiState.Loading,
@@ -228,10 +234,10 @@ private fun AsistenciaHistorialSection(
                 message = "No hay asistencias registradas"
             )
         } else {
-            LazyColumn(
+            Column(
                 verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                items(asistencias) { asistencia ->
+                asistencias.forEach { asistencia ->
                     AsistenciaHistorialCard(asistencia = asistencia)
                 }
             }

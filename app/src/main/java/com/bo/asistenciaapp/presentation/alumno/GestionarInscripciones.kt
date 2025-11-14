@@ -127,22 +127,12 @@ private fun GestionarInscripcionesContent(
     gestionActual: Int,
     onInscribirse: (Int) -> Unit
 ) {
-    val scrollState = rememberScrollState()
-    
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(paddingValues)
-            .verticalScroll(scrollState)
-            .padding(16.dp),
-        verticalArrangement = Arrangement.spacedBy(24.dp)
-    ) {
-        InscripcionesGruposDisponiblesSection(
-            grupos = gruposDisponibles,
-            uiState = uiState,
-            onInscribirse = onInscribirse
-        )
-    }
+    InscripcionesGruposDisponiblesSection(
+        paddingValues = paddingValues,
+        grupos = gruposDisponibles,
+        uiState = uiState,
+        onInscribirse = onInscribirse
+    )
 }
 
 /**
@@ -152,48 +142,55 @@ private fun GestionarInscripcionesContent(
  */
 @Composable
 private fun InscripcionesGruposDisponiblesSection(
+    paddingValues: PaddingValues,
     grupos: List<GrupoConHorariosInscripcion>,
     uiState: InscripcionUiState,
     onInscribirse: (Int) -> Unit
 ) {
-    Column(
-        verticalArrangement = Arrangement.spacedBy(12.dp)
+    LazyColumn(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(paddingValues),
+        contentPadding = PaddingValues(16.dp),
+        verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Icon(
-                imageVector = Icons.Default.AddCircle,
-                contentDescription = null,
-                tint = MaterialTheme.colorScheme.tertiary,
-                modifier = Modifier.size(24.dp)
-            )
-            Text(
-                text = "Grupos Disponibles",
-                style = MaterialTheme.typography.titleLarge,
-                fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.onSurface
-            )
+        // Header de la sección
+        item {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Icon(
+                    imageVector = Icons.Default.AddCircle,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.tertiary,
+                    modifier = Modifier.size(24.dp)
+                )
+                Text(
+                    text = "Grupos Disponibles",
+                    style = MaterialTheme.typography.titleLarge,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+            }
         }
         
+        // Estado vacío o lista de grupos
         if (grupos.isEmpty()) {
-            InscripcionesEmptyState(
-                icon = Icons.Default.Book,
-                message = "No hay grupos disponibles para inscripción"
-            )
+            item {
+                InscripcionesEmptyState(
+                    icon = Icons.Default.Book,
+                    message = "No hay grupos disponibles para inscripción"
+                )
+            }
         } else {
-            LazyColumn(
-                verticalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                items(grupos) { grupoConHorarios ->
-                    InscripcionesGrupoDisponibleCard(
-                        grupoConHorarios = grupoConHorarios,
-                        isLoading = uiState is InscripcionUiState.Loading,
-                        onInscribirse = { onInscribirse(grupoConHorarios.grupo.id) }
-                    )
-                }
+            items(grupos) { grupoConHorarios ->
+                InscripcionesGrupoDisponibleCard(
+                    grupoConHorarios = grupoConHorarios,
+                    isLoading = uiState is InscripcionUiState.Loading,
+                    onInscribirse = { onInscribirse(grupoConHorarios.grupo.id) }
+                )
             }
         }
     }
