@@ -80,10 +80,16 @@ fun GestionarInscripciones(
             is InscripcionUiState.Success -> {
                 if (state.mensaje != null) {
                     ToastUtils.mostrarSuperior(context, state.mensaje)
+                    // Limpiar el estado después de mostrar el mensaje
+                    kotlinx.coroutines.delay(100)
+                    viewModel.clearSuccess()
                 }
             }
             is InscripcionUiState.Error -> {
                 ToastUtils.mostrarSuperior(context, state.mensaje)
+                // Limpiar el estado después de mostrar el error
+                kotlinx.coroutines.delay(100)
+                viewModel.clearError()
             }
             else -> {}
         }

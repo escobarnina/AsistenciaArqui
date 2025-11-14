@@ -150,4 +150,13 @@ class VMInscripcion(
             _uiState.value = InscripcionUiState.Idle
         }
     }
+    
+    /**
+     * Limpia el estado de éxito después de mostrar el mensaje.
+     */
+    fun clearSuccess() {
+        if (_uiState.value is InscripcionUiState.Success) {
+            _uiState.value = InscripcionUiState.Idle
+        }
+    }
 }
