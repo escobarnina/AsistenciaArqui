@@ -25,14 +25,35 @@ class AsistenciaRepository(private val database: AppDatabase) {
     }
     
     /**
-     * Registra una nueva asistencia para un alumno.
+     * Registra una nueva asistencia para un alumno con hora marcada y estado.
      * 
      * @param alumnoId ID del alumno
      * @param grupoId ID del grupo
      * @param fecha Fecha de la asistencia
+     * @param horaMarcada Hora en que se marcó la asistencia (formato HH:mm)
+     * @param estado Estado de la asistencia (PRESENTE, RETRASO, FALTA)
+     */
+    fun registrar(alumnoId: Int, grupoId: Int, fecha: String, horaMarcada: String?, estado: String?) {
+        database.asistenciaDao.insertar(alumnoId, grupoId, fecha, horaMarcada, estado)
+    }
+    
+    /**
+     * Versión simplificada para retrocompatibilidad.
      */
     fun registrar(alumnoId: Int, grupoId: Int, fecha: String) {
-        database.asistenciaDao.insertar(alumnoId, grupoId, fecha)
+        registrar(alumnoId, grupoId, fecha, null, null)
+    }
+    
+    /**
+     * Obtiene la asistencia de un estudiante en un grupo para una fecha específica.
+     * 
+     * @param alumnoId ID del alumno
+     * @param grupoId ID del grupo
+     * @param fecha Fecha de la asistencia (formato YYYY-MM-DD)
+     * @return Asistencia si existe, null en caso contrario
+     */
+    fun obtenerPorAlumnoGrupoYFecha(alumnoId: Int, grupoId: Int, fecha: String): com.bo.asistenciaapp.domain.model.Asistencia? {
+        return database.asistenciaDao.obtenerPorAlumnoGrupoYFecha(alumnoId, grupoId, fecha)
     }
     
     /**

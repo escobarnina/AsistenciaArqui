@@ -30,7 +30,8 @@ sealed class AsistenciaUiState {
  */
 data class GrupoConHorarios(
     val grupo: Grupo,
-    val horarios: List<Horario>
+    val horarios: List<Horario>,
+    val asistenciaMarcada: com.bo.asistenciaapp.domain.model.Asistencia? = null  // Asistencia marcada hoy si existe
 )
 
 /**
@@ -61,11 +62,23 @@ class VMAsistencia(
     /**
      * Recarga las listas desde la base de datos.
      * Separa los grupos en disponibles ahora y próximos según horarios.
+     * Preserva el estado de asistencia si existe para mostrar el diálogo.
      */
     fun recargar() {
         viewModelScope.launch {
+            // Preservar el estado de asistencia si existe
+            val estadoActual = _uiState.value
+            val estadoAsistenciaPreservado = if (estadoActual is AsistenciaUiState.Success) {
+                estadoActual.estadoAsistencia
+            } else {
+                null
+            }
+            
             _uiState.value = AsistenciaUiState.Loading
             try {
+                // Obtener fecha actual
+                val fechaActual = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(Date())
+                
                 // Obtener grupos en los que el alumno está inscrito
                 val boletas = inscripcionCU.obtenerInscripciones(alumnoId)
                 val todosGrupos = grupoCU.obtenerGrupos()
@@ -73,17 +86,25 @@ class VMAsistencia(
                     boletas.any { it.grupoId == grupo.id }
                 }
                 
-                // Obtener horarios para cada grupo y separar disponibles ahora vs próximos
+                // Obtener horarios y asistencias marcadas hoy para cada grupo
                 val gruposConHorarios = gruposInscritos.map { grupo ->
                     val horarios = asistenciaCU.obtenerHorariosGrupo(grupo.id)
-                    GrupoConHorarios(grupo, horarios)
+                    // Verificar si ya marcó asistencia hoy
+                    val asistenciaMarcada = asistenciaCU.obtenerAsistenciaPorFecha(alumnoId, grupo.id, fechaActual)
+                    GrupoConHorarios(grupo, horarios, asistenciaMarcada)
                 }
                 
                 val (disponiblesAhora, proximos) = separarGruposPorDisponibilidad(gruposConHorarios)
                 
                 _gruposDisponiblesAhora.value = disponiblesAhora
                 _gruposProximos.value = proximos
-                _uiState.value = AsistenciaUiState.Success()
+                
+                // Preservar el estado de asistencia si existía antes de recargar
+                _uiState.value = if (estadoAsistenciaPreservado != null) {
+                    AsistenciaUiState.Success(null, estadoAsistenciaPreservado)
+                } else {
+                    AsistenciaUiState.Success()
+                }
             } catch (e: Exception) {
                 _uiState.value = AsistenciaUiState.Error("Error al cargar datos: ${e.message}")
             }
@@ -111,8 +132,9 @@ class VMAsistencia(
                 horario.horaFin >= horaActual
             }
             
-            // Si tiene horario disponible ahora, verificar si puede marcar asistencia
-            if (tieneHorarioDisponibleAhora && asistenciaCU.puedeMarcarAsistencia(alumnoId, grupoConHorarios.grupo.id)) {
+            // Si tiene horario disponible ahora y no ha marcado asistencia hoy, verificar si puede marcar asistencia
+            val yaMarcoHoy = grupoConHorarios.asistenciaMarcada != null
+            if (tieneHorarioDisponibleAhora && !yaMarcoHoy && asistenciaCU.puedeMarcarAsistencia(alumnoId, grupoConHorarios.grupo.id)) {
                 disponiblesAhora.add(grupoConHorarios)
             } else {
                 proximos.add(grupoConHorarios)
@@ -183,13 +205,17 @@ class VMAsistencia(
                 
                 when (result) {
                     is ValidationResult.Success -> {
-                        recargar()
+                        // Primero establecer el estado de éxito
                         _uiState.value = AsistenciaUiState.Success("Asistencia registrada exitosamente")
+                        // Luego recargar (preservará el estado si tiene estadoAsistencia)
+                        recargar()
                     }
                     is ValidationResult.SuccessWithData<*> -> {
-                        recargar()
+                        // Primero establecer el estado de éxito con el estado de asistencia
                         val estado = result.data as? String ?: "PRESENTE"
                         _uiState.value = AsistenciaUiState.Success("Asistencia registrada exitosamente", estado)
+                        // Luego recargar (preservará el estadoAsistencia)
+                        recargar()
                     }
                     is ValidationResult.Error -> {
                         _uiState.value = AsistenciaUiState.Error(result.message)

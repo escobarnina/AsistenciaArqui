@@ -33,7 +33,7 @@ import com.bo.asistenciaapp.data.local.dao.UsuarioDao
  * - NO usar directamente desde casos de uso o ViewModels
  */
 class AppDatabase private constructor(context: Context) :
-    SQLiteOpenHelper(context.applicationContext, "asistenciadb.db", null, 19) {  // ⭐ Versión incrementada para actualización de esquema
+    SQLiteOpenHelper(context.applicationContext, "asistenciadb.db", null, 20) {  // ⭐ Versión incrementada para agregar hora_marcada y estado a asistencias
 
     companion object {
         @Volatile

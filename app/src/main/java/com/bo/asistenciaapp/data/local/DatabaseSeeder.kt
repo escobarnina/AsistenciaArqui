@@ -146,6 +146,9 @@ object DatabaseSeeder {
      * Inserta horarios de prueba en la base de datos.
      * 
      * Asigna horarios variados a los grupos creados.
+     * Incluye horarios de viernes para pruebas:
+     * - Grupos 1-5: Viernes 07:00 - 09:00
+     * - Grupos 6-10: Viernes 01:00 - 03:00
      */
     private fun seedHorarios(db: SQLiteDatabase) {
         db.execSQL(
@@ -154,24 +157,31 @@ object DatabaseSeeder {
             VALUES
             (1, 'Lunes', '08:00', '10:00'),
             (1, 'Miércoles', '08:00', '10:00'),
+            (1, 'Viernes', '07:00', '09:00'),
             (2, 'Martes', '10:00', '12:00'),
             (2, 'Jueves', '10:00', '12:00'),
+            (2, 'Viernes', '07:00', '09:00'),
             (3, 'Lunes', '14:00', '16:00'),
             (3, 'Miércoles', '14:00', '16:00'),
+            (3, 'Viernes', '07:00', '09:00'),
             (4, 'Martes', '14:00', '16:00'),
             (4, 'Jueves', '14:00', '16:00'),
+            (4, 'Viernes', '07:00', '09:00'),
             (5, 'Lunes', '16:00', '18:00'),
             (5, 'Miércoles', '16:00', '18:00'),
+            (5, 'Viernes', '07:00', '09:00'),
             (6, 'Martes', '08:00', '10:00'),
-            (6, 'Viernes', '08:00', '10:00'),
+            (6, 'Viernes', '01:00', '03:00'),
             (7, 'Lunes', '10:00', '12:00'),
             (7, 'Miércoles', '10:00', '12:00'),
+            (7, 'Viernes', '01:00', '03:00'),
             (8, 'Martes', '16:00', '18:00'),
             (8, 'Jueves', '16:00', '18:00'),
+            (8, 'Viernes', '01:00', '03:00'),
             (9, 'Lunes', '08:00', '10:00'),
-            (9, 'Viernes', '08:00', '10:00'),
+            (9, 'Viernes', '01:00', '03:00'),
             (10, 'Martes', '10:00', '12:00'),
-            (10, 'Viernes', '10:00', '12:00'),
+            (10, 'Viernes', '01:00', '03:00'),
             (11, 'Miércoles', '14:00', '16:00'),
             (11, 'Viernes', '14:00', '16:00'),
             (12, 'Lunes', '10:00', '12:00'),
@@ -192,7 +202,7 @@ object DatabaseSeeder {
             (20, 'Viernes', '14:00', '16:00')
         """.trimIndent()
         )
-        Log.d(TAG, "38 horarios de prueba insertados")
+        Log.d(TAG, "45 horarios de prueba insertados (incluye horarios de viernes para pruebas)")
     }
     
     /**
@@ -235,49 +245,50 @@ object DatabaseSeeder {
      * Inserta asistencias de prueba en la base de datos.
      * 
      * Registra asistencias de alumnos en diferentes grupos y fechas.
+     * Incluye hora_marcada y estado para probar la funcionalidad completa.
      */
     private fun seedAsistencias(db: SQLiteDatabase) {
         db.execSQL(
             """
-            INSERT INTO asistencias(alumno_id, grupo_id, fecha)
+            INSERT INTO asistencias(alumno_id, grupo_id, fecha, hora_marcada, estado)
             VALUES
-            (1, 1, '2025-01-20'),
-            (1, 1, '2025-01-22'),
-            (1, 4, '2025-01-21'),
-            (1, 4, '2025-01-23'),
-            (1, 6, '2025-01-21'),
-            (1, 6, '2025-01-24'),
-            (1, 9, '2025-01-20'),
-            (1, 9, '2025-01-24'),
-            (1, 12, '2025-01-22'),
-            (2, 1, '2025-01-20'),
-            (2, 1, '2025-01-22'),
-            (2, 3, '2025-01-20'),
-            (2, 3, '2025-01-22'),
-            (2, 7, '2025-01-21'),
-            (2, 7, '2025-01-23'),
-            (2, 10, '2025-01-21'),
-            (2, 10, '2025-01-24'),
-            (2, 13, '2025-01-22'),
-            (3, 2, '2025-01-21'),
-            (3, 2, '2025-01-23'),
-            (3, 5, '2025-01-20'),
-            (3, 5, '2025-01-22'),
-            (3, 8, '2025-01-21'),
-            (3, 8, '2025-01-23'),
-            (3, 11, '2025-01-22'),
-            (3, 11, '2025-01-24'),
-            (3, 14, '2025-01-20'),
-            (3, 14, '2025-01-22'),
-            (1, 15, '2025-01-21'),
-            (2, 16, '2025-01-20'),
-            (3, 17, '2025-01-21'),
-            (1, 19, '2025-01-24'),
-            (2, 20, '2025-01-24'),
-            (3, 19, '2025-01-24')
+            (1, 1, '2025-01-20', '08:05', 'PRESENTE'),
+            (1, 1, '2025-01-22', '08:15', 'RETRASO'),
+            (1, 4, '2025-01-21', '14:02', 'PRESENTE'),
+            (1, 4, '2025-01-23', '14:25', 'RETRASO'),
+            (1, 6, '2025-01-21', '08:10', 'PRESENTE'),
+            (1, 6, '2025-01-24', '08:35', 'FALTA'),
+            (1, 9, '2025-01-20', '08:03', 'PRESENTE'),
+            (1, 9, '2025-01-24', '08:12', 'PRESENTE'),
+            (1, 12, '2025-01-22', '10:08', 'PRESENTE'),
+            (2, 1, '2025-01-20', '08:07', 'PRESENTE'),
+            (2, 1, '2025-01-22', '08:20', 'RETRASO'),
+            (2, 3, '2025-01-20', '14:05', 'PRESENTE'),
+            (2, 3, '2025-01-22', '14:18', 'RETRASO'),
+            (2, 7, '2025-01-21', '10:04', 'PRESENTE'),
+            (2, 7, '2025-01-23', '10:22', 'RETRASO'),
+            (2, 10, '2025-01-21', '10:06', 'PRESENTE'),
+            (2, 10, '2025-01-24', '10:40', 'FALTA'),
+            (2, 13, '2025-01-22', '08:09', 'PRESENTE'),
+            (3, 2, '2025-01-21', '10:12', 'PRESENTE'),
+            (3, 2, '2025-01-23', '10:28', 'RETRASO'),
+            (3, 5, '2025-01-20', '16:02', 'PRESENTE'),
+            (3, 5, '2025-01-22', '16:15', 'RETRASO'),
+            (3, 8, '2025-01-21', '16:05', 'PRESENTE'),
+            (3, 8, '2025-01-23', '16:30', 'FALTA'),
+            (3, 11, '2025-01-22', '14:08', 'PRESENTE'),
+            (3, 11, '2025-01-24', '14:25', 'RETRASO'),
+            (3, 14, '2025-01-20', '14:03', 'PRESENTE'),
+            (3, 14, '2025-01-22', '14:20', 'RETRASO'),
+            (1, 15, '2025-01-21', '14:06', 'PRESENTE'),
+            (2, 16, '2025-01-20', '16:04', 'PRESENTE'),
+            (3, 17, '2025-01-21', '16:10', 'PRESENTE'),
+            (1, 19, '2025-01-24', '10:15', 'RETRASO'),
+            (2, 20, '2025-01-24', '14:12', 'PRESENTE'),
+            (3, 19, '2025-01-24', '10:08', 'PRESENTE')
         """.trimIndent()
         )
-        Log.d(TAG, "34 asistencias de prueba insertadas")
+        Log.d(TAG, "34 asistencias de prueba insertadas con hora_marcada y estado")
     }
     
     /**

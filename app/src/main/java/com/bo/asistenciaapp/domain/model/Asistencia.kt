@@ -48,5 +48,7 @@ data class Asistencia(
     val grupoId: Int,
     val fecha: String,
     val grupo: String,
-    val materiaNombre: String
+    val materiaNombre: String,
+    val horaMarcada: String? = null,
+    val estado: String? = null  // PRESENTE, RETRASO, FALTA
 )

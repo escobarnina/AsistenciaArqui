@@ -205,6 +205,8 @@ private fun AsistenciaGruposDisponiblesSection(
                 grupos.forEach { grupoConHorarios ->
                     AsistenciaGrupoCard(
                         grupo = grupoConHorarios.grupo,
+                        horarios = grupoConHorarios.horarios,
+                        asistenciaMarcada = grupoConHorarios.asistenciaMarcada,
                         isLoading = uiState is AsistenciaUiState.Loading,
                         onMarcarAsistencia = { onMarcarAsistencia(grupoConHorarios.grupo.id) }
                     )
@@ -378,10 +380,13 @@ private fun AsistenciaGrupoProximoCard(
  * Card de grupo para marcar asistencia.
  * 
  * Molécula que muestra la información del grupo y botón de acción.
+ * Si ya marcó asistencia, muestra la información de la asistencia marcada.
  */
 @Composable
 private fun AsistenciaGrupoCard(
     grupo: Grupo,
+    horarios: List<com.bo.asistenciaapp.domain.model.Horario>,
+    asistenciaMarcada: com.bo.asistenciaapp.domain.model.Asistencia?,
     isLoading: Boolean,
     onMarcarAsistencia: () -> Unit
 ) {
@@ -393,37 +398,64 @@ private fun AsistenciaGrupoCard(
         ),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
     ) {
-        Row(
+        Column(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(16.dp),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
+            verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
             Row(
-                modifier = Modifier.weight(1f),
+                modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(12.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Surface(
                     modifier = Modifier.size(48.dp),
                     shape = RoundedCornerShape(12.dp),
-                    color = MaterialTheme.colorScheme.primaryContainer
+                    color = if (asistenciaMarcada != null) {
+                        when (asistenciaMarcada.estado?.uppercase()) {
+                            "PRESENTE" -> MaterialTheme.colorScheme.primaryContainer
+                            "RETRASO" -> MaterialTheme.colorScheme.tertiaryContainer
+                            "FALTA" -> MaterialTheme.colorScheme.errorContainer
+                            else -> MaterialTheme.colorScheme.primaryContainer
+                        }
+                    } else {
+                        MaterialTheme.colorScheme.primaryContainer
+                    }
                 ) {
                     Box(
                         contentAlignment = Alignment.Center,
                         modifier = Modifier.fillMaxSize()
                     ) {
                         Icon(
-                            imageVector = Icons.Default.School,
+                            imageVector = if (asistenciaMarcada != null) {
+                                when (asistenciaMarcada.estado?.uppercase()) {
+                                    "PRESENTE" -> Icons.Default.CheckCircle
+                                    "RETRASO" -> Icons.Default.Schedule
+                                    "FALTA" -> Icons.Default.Error
+                                    else -> Icons.Default.School
+                                }
+                            } else {
+                                Icons.Default.School
+                            },
                             contentDescription = null,
                             modifier = Modifier.size(24.dp),
-                            tint = MaterialTheme.colorScheme.primary
+                            tint = if (asistenciaMarcada != null) {
+                                when (asistenciaMarcada.estado?.uppercase()) {
+                                    "PRESENTE" -> MaterialTheme.colorScheme.primary
+                                    "RETRASO" -> MaterialTheme.colorScheme.tertiary
+                                    "FALTA" -> MaterialTheme.colorScheme.error
+                                    else -> MaterialTheme.colorScheme.primary
+                                }
+                            } else {
+                                MaterialTheme.colorScheme.primary
+                            }
                         )
                     }
                 }
                 
                 Column(
+                    modifier = Modifier.weight(1f),
                     verticalArrangement = Arrangement.spacedBy(4.dp)
                 ) {
                     Text(
@@ -438,31 +470,95 @@ private fun AsistenciaGrupoCard(
                         color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
                     )
                 }
+                
+                // Mostrar botón solo si no ha marcado asistencia
+                if (asistenciaMarcada == null) {
+                    Button(
+                        onClick = onMarcarAsistencia,
+                        enabled = !isLoading,
+                        shape = RoundedCornerShape(12.dp),
+                        modifier = Modifier.height(40.dp)
+                    ) {
+                        if (isLoading) {
+                            CircularProgressIndicator(
+                                modifier = Modifier.size(16.dp),
+                                color = MaterialTheme.colorScheme.onPrimary,
+                                strokeWidth = 2.dp
+                            )
+                        } else {
+                            Icon(
+                                imageVector = Icons.Default.Check,
+                                contentDescription = null,
+                                modifier = Modifier.size(18.dp)
+                            )
+                            Spacer(modifier = Modifier.width(4.dp))
+                            Text(
+                                text = "Marcar",
+                                style = MaterialTheme.typography.labelMedium
+                            )
+                        }
+                    }
+                }
             }
             
-            Button(
-                onClick = onMarcarAsistencia,
-                enabled = !isLoading,
-                shape = RoundedCornerShape(12.dp),
-                modifier = Modifier.height(40.dp)
-            ) {
-                if (isLoading) {
-                    CircularProgressIndicator(
-                        modifier = Modifier.size(16.dp),
-                        color = MaterialTheme.colorScheme.onPrimary,
-                        strokeWidth = 2.dp
+            // Mostrar información de asistencia si ya está marcada
+            asistenciaMarcada?.let { asistencia ->
+                val horarioInicio = horarios.firstOrNull()?.horaInicio ?: "N/A"
+                Column(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalArrangement = Arrangement.spacedBy(6.dp)
+                ) {
+                    HorizontalDivider(
+                        modifier = Modifier.fillMaxWidth(),
+                        color = MaterialTheme.colorScheme.outline.copy(alpha = 0.2f)
                     )
-                } else {
-                    Icon(
-                        imageVector = Icons.Default.Check,
-                        contentDescription = null,
-                        modifier = Modifier.size(18.dp)
-                    )
-                    Spacer(modifier = Modifier.width(4.dp))
-                    Text(
-                        text = "Marcar",
-                        style = MaterialTheme.typography.labelMedium
-                    )
+                    
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Icon(
+                            imageVector = when (asistencia.estado?.uppercase()) {
+                                "PRESENTE" -> Icons.Default.CheckCircle
+                                "RETRASO" -> Icons.Default.Schedule
+                                "FALTA" -> Icons.Default.Error
+                                else -> Icons.Default.Info
+                            },
+                            contentDescription = null,
+                            modifier = Modifier.size(16.dp),
+                            tint = when (asistencia.estado?.uppercase()) {
+                                "PRESENTE" -> MaterialTheme.colorScheme.primary
+                                "RETRASO" -> MaterialTheme.colorScheme.tertiary
+                                "FALTA" -> MaterialTheme.colorScheme.error
+                                else -> MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+                            }
+                        )
+                        Text(
+                            text = "Estado: ${asistencia.estado ?: "N/A"}",
+                            style = MaterialTheme.typography.bodySmall,
+                            fontWeight = FontWeight.Medium,
+                            color = MaterialTheme.colorScheme.onSurface
+                        )
+                    }
+                    
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Schedule,
+                            contentDescription = null,
+                            modifier = Modifier.size(16.dp),
+                            tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+                        )
+                        Text(
+                            text = "Marcado: ${asistencia.horaMarcada ?: "N/A"} | Inicio: $horarioInicio",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
+                        )
+                    }
                 }
             }
         }

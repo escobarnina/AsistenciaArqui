@@ -160,6 +160,10 @@ object DatabaseMigrations {
     
     /**
      * Crea la tabla de asistencias.
+     * 
+     * Campos agregados:
+     * - hora_marcada: Hora en que el alumno marcó asistencia (formato HH:mm)
+     * - estado: Estado de la asistencia (PRESENTE, RETRASO, FALTA)
      */
     private fun createAsistenciasTable(db: SQLiteDatabase) {
         db.execSQL(
@@ -169,6 +173,8 @@ object DatabaseMigrations {
                 alumno_id INTEGER NOT NULL,
                 grupo_id INTEGER NOT NULL,
                 fecha TEXT NOT NULL,
+                hora_marcada TEXT,
+                estado TEXT CHECK(estado IN ('PRESENTE', 'RETRASO', 'FALTA')),
                 FOREIGN KEY(alumno_id) REFERENCES usuarios(id),
                 FOREIGN KEY(grupo_id) REFERENCES grupos(id)
             )

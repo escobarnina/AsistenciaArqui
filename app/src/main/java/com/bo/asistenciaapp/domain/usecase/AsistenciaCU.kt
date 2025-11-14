@@ -83,6 +83,21 @@ class AsistenciaCU(private val asistenciaRepository: AsistenciaRepository) {
     }
     
     /**
+     * Obtiene la asistencia de un alumno en un grupo para una fecha específica.
+     * 
+     * @param alumnoId ID del alumno
+     * @param grupoId ID del grupo
+     * @param fecha Fecha de la asistencia (formato YYYY-MM-DD)
+     * @return Asistencia si existe, null en caso contrario
+     */
+    fun obtenerAsistenciaPorFecha(alumnoId: Int, grupoId: Int, fecha: String): Asistencia? {
+        if (!Validators.isPositive(alumnoId) || !Validators.isPositive(grupoId)) {
+            return null
+        }
+        return asistenciaRepository.obtenerPorAlumnoGrupoYFecha(alumnoId, grupoId, fecha)
+    }
+    
+    /**
      * Obtiene los horarios de un grupo específico.
      * 
      * @param grupoId ID del grupo
@@ -189,8 +204,8 @@ class AsistenciaCU(private val asistenciaRepository: AsistenciaRepository) {
         val estado = _estrategia!!.calcularEstado(horaMarcado, horaInicio, toleranciaMinutos)
         Log.d(TAG, "Estado calculado por la estrategia: $estado (tolerancia: $toleranciaMinutos min)")
         
-        // Registrar asistencia en el repositorio
-        asistenciaRepository.registrar(alumnoId, grupoId, fecha)
+        // Registrar asistencia en el repositorio con hora marcada y estado
+        asistenciaRepository.registrar(alumnoId, grupoId, fecha, horaMarcado, estado)
         
         Log.d(TAG, "Asistencia registrada exitosamente con estado: $estado")
         

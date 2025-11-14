@@ -23,9 +23,12 @@ class AsistenciaDao(private val database: SQLiteDatabase) {
                 a.grupo_id, 
                 a.fecha,
                 g.grupo,
-                g.materia_nombre
+                g.materia_nombre,
+                a.hora_marcada,
+                a.estado
                 FROM 
-                asistencias a join grupos g 
+                asistencias a 
+                JOIN grupos g ON a.grupo_id = g.id
                 WHERE a.alumno_id=?
             """.trimIndent(),
             arrayOf(alumnoId.toString())
@@ -38,7 +41,9 @@ class AsistenciaDao(private val database: SQLiteDatabase) {
                         grupoId = c.getInt(2),
                         fecha = c.getString(3),
                         grupo = c.getString(4),
-                        materiaNombre = c.getString(5)
+                        materiaNombre = c.getString(5),
+                        horaMarcada = if (c.isNull(6)) null else c.getString(6),
+                        estado = if (c.isNull(7)) null else c.getString(7)
                     )
                 )
             }
@@ -47,13 +52,20 @@ class AsistenciaDao(private val database: SQLiteDatabase) {
     }
     
     /**
-     * Registra una nueva asistencia.
+     * Registra una nueva asistencia con hora marcada y estado.
+     */
+    fun insertar(alumnoId: Int, grupoId: Int, fecha: String, horaMarcada: String?, estado: String?) {
+        database.execSQL(
+            "INSERT INTO asistencias(alumno_id, grupo_id, fecha, hora_marcada, estado) VALUES (?,?,?,?,?)",
+            arrayOf(alumnoId, grupoId, fecha, horaMarcada, estado)
+        )
+    }
+    
+    /**
+     * Versión simplificada para retrocompatibilidad.
      */
     fun insertar(alumnoId: Int, grupoId: Int, fecha: String) {
-        database.execSQL(
-            "INSERT INTO asistencias(alumno_id, grupo_id, fecha) VALUES (?,?,?)",
-            arrayOf(alumnoId, grupoId, fecha)
-        )
+        insertar(alumnoId, grupoId, fecha, null, null)
     }
     
     /**
@@ -93,7 +105,9 @@ class AsistenciaDao(private val database: SQLiteDatabase) {
                 a.grupo_id, 
                 a.fecha,
                 g.grupo,
-                g.materia_nombre
+                g.materia_nombre,
+                a.hora_marcada,
+                a.estado
                 FROM 
                 asistencias a 
                 JOIN grupos g ON a.grupo_id = g.id
@@ -110,7 +124,9 @@ class AsistenciaDao(private val database: SQLiteDatabase) {
                         grupoId = c.getInt(2),
                         fecha = c.getString(3),
                         grupo = c.getString(4),
-                        materiaNombre = c.getString(5)
+                        materiaNombre = c.getString(5),
+                        horaMarcada = if (c.isNull(6)) null else c.getString(6),
+                        estado = if (c.isNull(7)) null else c.getString(7)
                     )
                 )
             }
@@ -131,7 +147,9 @@ class AsistenciaDao(private val database: SQLiteDatabase) {
                 a.grupo_id, 
                 a.fecha,
                 g.grupo,
-                g.materia_nombre
+                g.materia_nombre,
+                a.hora_marcada,
+                a.estado
                 FROM 
                 asistencias a 
                 JOIN grupos g ON a.grupo_id = g.id
@@ -148,12 +166,54 @@ class AsistenciaDao(private val database: SQLiteDatabase) {
                         grupoId = c.getInt(2),
                         fecha = c.getString(3),
                         grupo = c.getString(4),
-                        materiaNombre = c.getString(5)
+                        materiaNombre = c.getString(5),
+                        horaMarcada = if (c.isNull(6)) null else c.getString(6),
+                        estado = if (c.isNull(7)) null else c.getString(7)
                     )
                 )
             }
         }
         return lista
+    }
+    
+    /**
+     * Obtiene la asistencia de un estudiante en un grupo para una fecha específica.
+     * Retorna null si no existe.
+     */
+    fun obtenerPorAlumnoGrupoYFecha(alumnoId: Int, grupoId: Int, fecha: String): Asistencia? {
+        database.rawQuery(
+            """
+                SELECT 
+                a.id, 
+                a.alumno_id, 
+                a.grupo_id, 
+                a.fecha,
+                g.grupo,
+                g.materia_nombre,
+                a.hora_marcada,
+                a.estado
+                FROM 
+                asistencias a 
+                JOIN grupos g ON a.grupo_id = g.id
+                WHERE a.alumno_id = ? AND a.grupo_id = ? AND a.fecha = ?
+                LIMIT 1
+            """.trimIndent(),
+            arrayOf(alumnoId.toString(), grupoId.toString(), fecha)
+        ).use { c ->
+            if (c.moveToFirst()) {
+                return Asistencia(
+                    id = c.getInt(0),
+                    alumnoId = c.getInt(1),
+                    grupoId = c.getInt(2),
+                    fecha = c.getString(3),
+                    grupo = c.getString(4),
+                    materiaNombre = c.getString(5),
+                    horaMarcada = if (c.isNull(6)) null else c.getString(6),
+                    estado = if (c.isNull(7)) null else c.getString(7)
+                )
+            }
+        }
+        return null
     }
     
     /**
