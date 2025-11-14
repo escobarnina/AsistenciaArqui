@@ -91,7 +91,8 @@ class GrupoDao(private val database: SQLiteDatabase) {
                         capacidad = c.getInt(7),
                         nroInscritos = c.getInt(8),
                         grupo = c.getString(9),
-                        toleranciaMinutos = c.getInt(10)  // ⭐ NUEVO CAMPO
+                        toleranciaMinutos = c.getInt(10),
+                        tipoEstrategia = c.getString(11)  // ⭐ NUEVO CAMPO
                     )
                 )
             }

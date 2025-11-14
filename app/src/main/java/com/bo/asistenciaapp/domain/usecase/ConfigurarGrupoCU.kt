@@ -28,6 +28,11 @@ class ConfigurarGrupoCU(private val grupoRepository: GrupoRepository) {
         private const val TAG = "ConfigurarGrupoCU"
         private const val TOLERANCIA_MINIMA = 0
         private const val TOLERANCIA_MAXIMA = 60
+        
+        /**
+         * Tipos de estrategia válidos.
+         */
+        val TIPOS_ESTRATEGIA_VALIDOS = listOf("PRESENTE", "RETRASO", "FALTA")
     }
     
     /**
@@ -147,6 +152,71 @@ class ConfigurarGrupoCU(private val grupoRepository: GrupoRepository) {
      */
     fun obtenerRangoValido(): Pair<Int, Int> {
         return Pair(TOLERANCIA_MINIMA, TOLERANCIA_MAXIMA)
+    }
+    
+    /**
+     * Configura el tipo de estrategia de un grupo específico.
+     * 
+     * ## Validaciones:
+     * - El ID del grupo debe ser positivo
+     * - El tipo de estrategia debe ser uno de: "PRESENTE", "RETRASO", "FALTA"
+     * 
+     * ## Patrón Strategy:
+     * Al actualizar el tipo de estrategia, el sistema utilizará la estrategia
+     * correspondiente para calcular el estado de asistencia en los próximos registros.
+     * 
+     * @param grupoId ID del grupo a configurar
+     * @param tipoEstrategia Tipo de estrategia: "PRESENTE", "RETRASO" o "FALTA"
+     * @return ValidationResult.Success si se actualizó correctamente, 
+     *         ValidationResult.Error con mensaje si hubo un error
+     */
+    fun configurarTipoEstrategia(grupoId: Int, tipoEstrategia: String): ValidationResult {
+        Log.d(TAG, "=== CONFIGURANDO TIPO DE ESTRATEGIA ===")
+        Log.d(TAG, "Grupo ID: $grupoId, Nueva estrategia: $tipoEstrategia")
+        
+        // Validación 1: ID del grupo debe ser positivo
+        if (grupoId <= 0) {
+            val mensaje = "ID de grupo inválido: $grupoId"
+            Log.e(TAG, mensaje)
+            return ValidationResult.Error(mensaje)
+        }
+        
+        // Validación 2: Tipo de estrategia debe ser válido
+        if (tipoEstrategia !in TIPOS_ESTRATEGIA_VALIDOS) {
+            val mensaje = "Tipo de estrategia inválido: $tipoEstrategia. Valores válidos: ${TIPOS_ESTRATEGIA_VALIDOS.joinToString(", ")}"
+            Log.e(TAG, mensaje)
+            return ValidationResult.Error(mensaje)
+        }
+        
+        // Validación 3: Verificar que el grupo existe
+        val grupoExiste = grupoRepository.existeGrupo(grupoId)
+        if (!grupoExiste) {
+            val mensaje = "El grupo con ID $grupoId no existe"
+            Log.e(TAG, mensaje)
+            return ValidationResult.Error(mensaje)
+        }
+        
+        // Actualizar tipo de estrategia en la base de datos
+        return try {
+            grupoRepository.actualizarTipoEstrategia(grupoId, tipoEstrategia)
+            Log.d(TAG, "✅ Tipo de estrategia actualizado exitosamente a $tipoEstrategia")
+            Log.d(TAG, "El grupo $grupoId ahora utilizará la estrategia $tipoEstrategia para calcular asistencias")
+            ValidationResult.Success
+        } catch (e: Exception) {
+            val mensaje = "Error al actualizar tipo de estrategia: ${e.message}"
+            Log.e(TAG, mensaje, e)
+            ValidationResult.Error(mensaje)
+        }
+    }
+    
+    /**
+     * Valida si un tipo de estrategia es válido.
+     * 
+     * @param tipoEstrategia Tipo de estrategia a validar
+     * @return true si es válido, false en caso contrario
+     */
+    fun esTipoEstrategiaValido(tipoEstrategia: String): Boolean {
+        return tipoEstrategia in TIPOS_ESTRATEGIA_VALIDOS
     }
 }
 

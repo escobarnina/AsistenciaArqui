@@ -18,7 +18,6 @@ import com.bo.asistenciaapp.presentation.alumno.AlumnoHomeScreen
 import com.bo.asistenciaapp.presentation.alumno.GestionarAsistencia
 import com.bo.asistenciaapp.presentation.alumno.GestionarInscripciones
 import com.bo.asistenciaapp.presentation.docente.DocenteHomeScreen
-import com.bo.asistenciaapp.presentation.docente.MarcarAsistenciaDocenteScreen
 import com.bo.asistenciaapp.presentation.docente.VerEstudiantesGrupoScreen
 import com.bo.asistenciaapp.presentation.docente.VerGruposDocenteScreen
 import com.bo.asistenciaapp.presentation.login.LoginScreen
@@ -180,8 +179,7 @@ private fun DocenteRoutes(
             onLogout = {
                 handleLogout(navController, session)
             },
-            onVerGrupos = { navController.navigate(NavRoutes.DocenteGrupos) },
-            onMarcarAsistencias = { navController.navigate(NavRoutes.DocenteMarcarAsistencias) }
+            onVerGrupos = { navController.navigate(NavRoutes.DocenteGrupos) }
         )
     }
     
@@ -199,16 +197,6 @@ private fun DocenteRoutes(
         VerEstudiantesGrupoScreen(
             grupoId = grupoId,
             grupoNombre = "",
-            onBack = { navController.popBackStack() },
-            onMarcarAsistencia = { estudianteId, grupoId ->
-                navController.navigate(NavRoutes.DocenteMarcarAsistencias)
-            }
-        )
-    }
-    
-    builder.composable(NavRoutes.DocenteMarcarAsistencias) {
-        MarcarAsistenciaDocenteScreen(
-            docenteId = userId,
             onBack = { navController.popBackStack() }
         )
     }
@@ -333,7 +321,6 @@ private object NavRoutes {
     const val DocenteHome = "docenteHome"
     const val DocenteGrupos = "docenteGrupos"
     const val DocenteEstudiantes = "docenteEstudiantes"
-    const val DocenteMarcarAsistencias = "docenteMarcarAsistencias"
     
     // Alumno
     const val AlumnoHome = "alumnoHome"

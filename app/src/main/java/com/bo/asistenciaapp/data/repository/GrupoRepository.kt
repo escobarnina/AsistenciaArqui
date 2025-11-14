@@ -92,6 +92,20 @@ class GrupoRepository(private val database: AppDatabase) {
     }
     
     /**
+     * Actualiza el tipo de estrategia de un grupo específico.
+     * 
+     * ⭐ PATRÓN STRATEGY - Configuración Dinámica:
+     * Este método permite modificar qué estrategia utilizará el grupo
+     * para calcular el estado de asistencia (PRESENTE, RETRASO, FALTA).
+     * 
+     * @param id ID del grupo a actualizar
+     * @param tipoEstrategia Tipo de estrategia: "PRESENTE", "RETRASO" o "FALTA"
+     */
+    fun actualizarTipoEstrategia(id: Int, tipoEstrategia: String) {
+        database.grupoDao.actualizarTipoEstrategia(id, tipoEstrategia)
+    }
+    
+    /**
      * Verifica si existe un grupo con el ID especificado.
      * 
      * @param id ID del grupo a verificar

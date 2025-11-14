@@ -23,8 +23,7 @@ import com.bo.asistenciaapp.presentation.common.UserLayout
 /**
  * Pantalla para mostrar los estudiantes inscritos en un grupo específico.
  * 
- * Permite al docente ver la lista de estudiantes inscritos en un grupo
- * y acceder a marcar sus asistencias.
+ * Permite al docente ver la lista de estudiantes inscritos en un grupo.
  * 
  * Arquitectura: Componentes organizados siguiendo principios de Atomic Design
  * - Atoms: Elementos básicos (Iconos, Textos)
@@ -35,8 +34,7 @@ import com.bo.asistenciaapp.presentation.common.UserLayout
 fun VerEstudiantesGrupoScreen(
     grupoId: Int,
     grupoNombre: String,
-    onBack: () -> Unit,
-    onMarcarAsistencia: (Int, Int) -> Unit
+    onBack: () -> Unit
 ) {
     val context = LocalContext.current
     val session = remember { UserSession(context) }
@@ -73,7 +71,7 @@ fun VerEstudiantesGrupoScreen(
     }
     
     UserLayout(
-        title = "Estudiantes - ${nombreGrupo.value}",
+        title = "Estudiantes",
         showBackButton = true,
         onBack = onBack
     ) { paddingValues ->
@@ -81,8 +79,8 @@ fun VerEstudiantesGrupoScreen(
             paddingValues = paddingValues,
             estudiantes = estudiantes,
             isLoading = isLoading.value,
-            grupoId = grupoId,
-            onMarcarAsistencia = onMarcarAsistencia
+            nombreGrupo = nombreGrupo.value,
+            totalEstudiantes = estudiantes.size
         )
     }
 }
@@ -101,22 +99,22 @@ private fun VerEstudiantesGrupoContent(
     paddingValues: PaddingValues,
     estudiantes: List<Usuario>,
     isLoading: Boolean,
-    grupoId: Int,
-    onMarcarAsistencia: (Int, Int) -> Unit
+    nombreGrupo: String,
+    totalEstudiantes: Int
 ) {
     when {
         isLoading -> {
             VerEstudiantesLoadingState(paddingValues = paddingValues)
         }
         estudiantes.isEmpty() -> {
-            VerEstudiantesEmptyState(paddingValues = paddingValues)
+            VerEstudiantesEmptyState(paddingValues = paddingValues, nombreGrupo = nombreGrupo)
         }
         else -> {
             VerEstudiantesList(
                 paddingValues = paddingValues,
                 estudiantes = estudiantes,
-                grupoId = grupoId,
-                onMarcarAsistencia = onMarcarAsistencia
+                nombreGrupo = nombreGrupo,
+                totalEstudiantes = totalEstudiantes
             )
         }
     }
@@ -131,8 +129,8 @@ private fun VerEstudiantesGrupoContent(
 private fun VerEstudiantesList(
     paddingValues: PaddingValues,
     estudiantes: List<Usuario>,
-    grupoId: Int,
-    onMarcarAsistencia: (Int, Int) -> Unit
+    nombreGrupo: String,
+    totalEstudiantes: Int
 ) {
     LazyColumn(
         modifier = Modifier
@@ -141,11 +139,18 @@ private fun VerEstudiantesList(
         contentPadding = PaddingValues(16.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
+        // Header con información del grupo
+        item {
+            VerGrupoInfoHeader(
+                nombreGrupo = nombreGrupo,
+                totalEstudiantes = totalEstudiantes
+            )
+        }
+        
+        // Lista de estudiantes
         items(estudiantes) { estudiante ->
             VerEstudianteCard(
-                estudiante = estudiante,
-                grupoId = grupoId,
-                onMarcarAsistencia = onMarcarAsistencia
+                estudiante = estudiante
             )
         }
     }
@@ -158,13 +163,11 @@ private fun VerEstudiantesList(
 /**
  * Card de estudiante del grupo.
  * 
- * Molécula que muestra la información del estudiante y botón para marcar asistencia.
+ * Molécula que muestra la información del estudiante.
  */
 @Composable
 private fun VerEstudianteCard(
-    estudiante: Usuario,
-    grupoId: Int,
-    onMarcarAsistencia: (Int, Int) -> Unit
+    estudiante: Usuario
 ) {
     Card(
         modifier = Modifier.fillMaxWidth(),
@@ -178,75 +181,53 @@ private fun VerEstudianteCard(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(16.dp),
-            horizontalArrangement = Arrangement.SpaceBetween,
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Row(
-                modifier = Modifier.weight(1f),
-                horizontalArrangement = Arrangement.spacedBy(12.dp),
-                verticalAlignment = Alignment.CenterVertically
+            Surface(
+                modifier = Modifier.size(48.dp),
+                shape = RoundedCornerShape(12.dp),
+                color = MaterialTheme.colorScheme.primaryContainer
             ) {
-                Surface(
-                    modifier = Modifier.size(48.dp),
-                    shape = RoundedCornerShape(12.dp),
-                    color = MaterialTheme.colorScheme.primaryContainer
+                Box(
+                    contentAlignment = Alignment.Center,
+                    modifier = Modifier.fillMaxSize()
                 ) {
-                    Box(
-                        contentAlignment = Alignment.Center,
-                        modifier = Modifier.fillMaxSize()
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.Person,
-                            contentDescription = null,
-                            modifier = Modifier.size(24.dp),
-                            tint = MaterialTheme.colorScheme.primary
-                        )
-                    }
-                }
-                
-                Column(
-                    verticalArrangement = Arrangement.spacedBy(4.dp)
-                ) {
-                    Text(
-                        text = "${estudiante.nombres} ${estudiante.apellidos}",
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.SemiBold,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    Icon(
+                        imageVector = Icons.Default.Person,
+                        contentDescription = null,
+                        modifier = Modifier.size(24.dp),
+                        tint = MaterialTheme.colorScheme.primary
                     )
-                    Row(
-                        horizontalArrangement = Arrangement.spacedBy(4.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.Badge,
-                            contentDescription = null,
-                            modifier = Modifier.size(14.dp),
-                            tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
-                        )
-                        Text(
-                            text = "Registro: ${estudiante.registro}",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
-                        )
-                    }
                 }
             }
             
-            Button(
-                onClick = { onMarcarAsistencia(estudiante.id, grupoId) },
-                shape = RoundedCornerShape(12.dp),
-                modifier = Modifier.height(40.dp)
+            Column(
+                modifier = Modifier.weight(1f),
+                verticalArrangement = Arrangement.spacedBy(4.dp)
             ) {
-                Icon(
-                    imageVector = Icons.Default.Check,
-                    contentDescription = null,
-                    modifier = Modifier.size(18.dp)
-                )
-                Spacer(modifier = Modifier.width(4.dp))
                 Text(
-                    text = "Marcar",
-                    style = MaterialTheme.typography.labelMedium
+                    text = "${estudiante.nombres} ${estudiante.apellidos}",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.SemiBold,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(4.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Badge,
+                        contentDescription = null,
+                        modifier = Modifier.size(14.dp),
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
+                    )
+                    Text(
+                        text = "Registro: ${estudiante.registro}",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
+                    )
+                }
             }
         }
     }
@@ -270,12 +251,89 @@ private fun VerEstudiantesLoadingState(paddingValues: PaddingValues) {
 }
 
 /**
+ * Header con información del grupo.
+ * 
+ * Molécula que muestra el nombre del grupo y el total de estudiantes.
+ */
+@Composable
+private fun VerGrupoInfoHeader(
+    nombreGrupo: String,
+    totalEstudiantes: Int
+) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.primaryContainer
+        ),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp),
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Surface(
+                modifier = Modifier.size(48.dp),
+                shape = RoundedCornerShape(12.dp),
+                color = MaterialTheme.colorScheme.primary
+            ) {
+                Box(
+                    contentAlignment = Alignment.Center,
+                    modifier = Modifier.fillMaxSize()
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.School,
+                        contentDescription = null,
+                        modifier = Modifier.size(24.dp),
+                        tint = MaterialTheme.colorScheme.onPrimary
+                    )
+                }
+            }
+            
+            Column(
+                modifier = Modifier.weight(1f),
+                verticalArrangement = Arrangement.spacedBy(4.dp)
+            ) {
+                Text(
+                    text = nombreGrupo,
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.SemiBold,
+                    color = MaterialTheme.colorScheme.onPrimaryContainer
+                )
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(4.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.People,
+                        contentDescription = null,
+                        modifier = Modifier.size(14.dp),
+                        tint = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.7f)
+                    )
+                    Text(
+                        text = "$totalEstudiantes estudiante${if (totalEstudiantes != 1) "s" else ""}",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.7f)
+                    )
+                }
+            }
+        }
+    }
+}
+
+/**
  * Estado vacío para la lista de estudiantes.
  * 
  * Molécula que muestra un mensaje cuando no hay estudiantes.
  */
 @Composable
-private fun VerEstudiantesEmptyState(paddingValues: PaddingValues) {
+private fun VerEstudiantesEmptyState(
+    paddingValues: PaddingValues,
+    nombreGrupo: String
+) {
     Box(
         modifier = Modifier
             .fillMaxSize()
@@ -303,9 +361,15 @@ private fun VerEstudiantesEmptyState(paddingValues: PaddingValues) {
                     tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
                 )
                 Text(
-                    text = "No hay estudiantes inscritos en este grupo",
-                    style = MaterialTheme.typography.bodyLarge,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
+                    text = "No hay estudiantes inscritos",
+                    style = MaterialTheme.typography.titleSmall,
+                    fontWeight = FontWeight.Medium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.8f)
+                )
+                Text(
+                    text = nombreGrupo,
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
                 )
             }
         }

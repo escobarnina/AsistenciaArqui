@@ -131,6 +131,7 @@ private fun UserTopAppBar(
  * Contenedor principal del contenido del layout.
  * 
  * Organismo que maneja el padding y espaciado del contenido.
+ * El contenido recibe los paddingValues para aplicarlos según necesite.
  */
 @Composable
 private fun UserLayoutContent(
@@ -138,9 +139,7 @@ private fun UserLayoutContent(
     content: @Composable (PaddingValues) -> Unit
 ) {
     Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(paddingValues)
+        modifier = Modifier.fillMaxSize()
     ) {
         content(paddingValues)
     }

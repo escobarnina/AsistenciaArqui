@@ -1,7 +1,9 @@
 package com.bo.asistenciaapp.presentation.docente
 
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
@@ -23,7 +25,6 @@ import com.bo.asistenciaapp.presentation.common.HomeLayout
  * 
  * Muestra las opciones disponibles para el docente:
  * - Ver sus grupos asignados
- * - Marcar asistencias de estudiantes
  * - Exportar asistencias (usando Patrón Adapter)
  * 
  * Arquitectura: Componentes organizados siguiendo principios de Atomic Design
@@ -33,13 +34,11 @@ import com.bo.asistenciaapp.presentation.common.HomeLayout
  * 
  * @param onLogout Callback cuando se presiona cerrar sesión
  * @param onVerGrupos Callback cuando se presiona ver grupos
- * @param onMarcarAsistencias Callback cuando se presiona marcar asistencias
  */
 @Composable
 fun DocenteHomeScreen(
     onLogout: () -> Unit,
-    onVerGrupos: () -> Unit,
-    onMarcarAsistencias: () -> Unit
+    onVerGrupos: () -> Unit
 ) {
     val context = LocalContext.current
     
@@ -54,14 +53,12 @@ fun DocenteHomeScreen(
     
     // Estado para controlar el diálogo de exportación
     var mostrarDialogoExportar by remember { mutableStateOf(false) }
-    var grupoSeleccionadoId by remember { mutableStateOf<Int?>(null) }
     
     HomeLayout { paddingValues ->
         DocenteHomeContent(
             paddingValues = paddingValues,
             onLogout = onLogout,
             onVerGrupos = onVerGrupos,
-            onMarcarAsistencias = onMarcarAsistencias,
             onExportarAsistencias = {
                 // Al hacer clic, necesitamos seleccionar un grupo primero
                 // Por ahora, abrimos el diálogo directamente
@@ -112,22 +109,20 @@ private fun DocenteHomeContent(
     paddingValues: PaddingValues,
     onLogout: () -> Unit,
     onVerGrupos: () -> Unit,
-    onMarcarAsistencias: () -> Unit,
     onExportarAsistencias: () -> Unit
 ) {
     Column(
         modifier = Modifier
             .fillMaxSize()
             .padding(paddingValues)
-            .padding(24.dp),
+            .verticalScroll(rememberScrollState())
+            .padding(horizontal = 16.dp, vertical = 16.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.spacedBy(24.dp)
+        verticalArrangement = Arrangement.spacedBy(20.dp)
     ) {
         DocenteHomeHeader()
-        Spacer(modifier = Modifier.height(8.dp))
         DocenteHomeMenu(
             onVerGrupos = onVerGrupos,
-            onMarcarAsistencias = onMarcarAsistencias,
             onExportarAsistencias = onExportarAsistencias,
             onLogout = onLogout
         )
@@ -142,7 +137,6 @@ private fun DocenteHomeContent(
 @Composable
 private fun DocenteHomeMenu(
     onVerGrupos: () -> Unit,
-    onMarcarAsistencias: () -> Unit,
     onExportarAsistencias: () -> Unit,
     onLogout: () -> Unit
 ) {
@@ -157,14 +151,7 @@ private fun DocenteHomeMenu(
             onClick = onVerGrupos
         )
         
-        DocenteActionCard(
-            title = "Marcar Asistencias",
-            description = "Registrar asistencia de estudiantes",
-            icon = Icons.Default.CheckCircle,
-            onClick = onMarcarAsistencias
-        )
-        
-        // ⭐ NUEVO: Botón de Exportar Asistencias (Patrón Adapter)
+        // ⭐ Botón de Exportar Asistencias (Patrón Adapter)
         DocenteActionCard(
             title = "Exportar Asistencias",
             description = "Generar reportes en Excel o PDF",

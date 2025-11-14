@@ -96,15 +96,6 @@ fun ExportarAsistenciasDialog(
                     color = MaterialTheme.colorScheme.onSurface
                 )
                 
-                Spacer(modifier = Modifier.height(8.dp))
-                
-                Text(
-                    text = "Selecciona el formato de exportación",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    textAlign = TextAlign.Center
-                )
-                
                 Spacer(modifier = Modifier.height(24.dp))
                 
                 // ===== INDICADOR DE PROGRESO =====
@@ -136,7 +127,6 @@ fun ExportarAsistenciasDialog(
                         BotonFormato(
                             icono = Icons.Default.TableChart,
                             titulo = "Exportar a Excel",
-                            descripcion = "Archivo .xlsx compatible con Microsoft Excel",
                             color = Color(0xFF217346),  // Verde Excel
                             onClick = {
                                 formatoSeleccionado = "Excel"
@@ -164,7 +154,6 @@ fun ExportarAsistenciasDialog(
                         BotonFormato(
                             icono = Icons.Default.PictureAsPdf,
                             titulo = "Exportar a PDF",
-                            descripcion = "Documento PDF universal",
                             color = Color(0xFFD32F2F),  // Rojo PDF
                             onClick = {
                                 formatoSeleccionado = "PDF"
@@ -207,14 +196,12 @@ fun ExportarAsistenciasDialog(
 /**
  * Componente reutilizable para cada botón de formato.
  * 
- * Muestra un botón atractivo con icono, título y descripción
- * del formato de exportación.
+ * Muestra un botón atractivo con icono y título del formato de exportación.
  */
 @Composable
 private fun BotonFormato(
     icono: ImageVector,
     titulo: String,
-    descripcion: String,
     color: Color,
     onClick: () -> Unit
 ) {
@@ -222,7 +209,7 @@ private fun BotonFormato(
         onClick = onClick,
         modifier = Modifier
             .fillMaxWidth()
-            .height(80.dp),
+            .height(64.dp),
         colors = ButtonDefaults.elevatedButtonColors(
             containerColor = MaterialTheme.colorScheme.surfaceVariant
         ),
@@ -240,31 +227,20 @@ private fun BotonFormato(
             Icon(
                 imageVector = icono,
                 contentDescription = null,
-                modifier = Modifier.size(40.dp),
+                modifier = Modifier.size(32.dp),
                 tint = color
             )
             
             Spacer(modifier = Modifier.width(16.dp))
             
-            // Textos
-            Column(
+            // Título
+            Text(
+                text = titulo,
                 modifier = Modifier.weight(1f),
-                verticalArrangement = Arrangement.Center,
-                horizontalAlignment = Alignment.Start
-            ) {
-                Text(
-                    text = titulo,
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.SemiBold,
-                    color = MaterialTheme.colorScheme.onSurface
-                )
-                
-                Text(
-                    text = descripcion,
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-            }
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.SemiBold,
+                color = MaterialTheme.colorScheme.onSurface
+            )
             
             // Flecha indicadora
             Icon(

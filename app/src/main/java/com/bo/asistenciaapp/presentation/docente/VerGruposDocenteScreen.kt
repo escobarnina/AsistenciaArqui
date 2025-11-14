@@ -56,6 +56,7 @@ fun VerGruposDocenteScreen(
     // Estado para el diálogo de configuración
     var grupoSeleccionado by remember { mutableStateOf<Grupo?>(null) }
     var grupoParaHorario by remember { mutableStateOf<Grupo?>(null) }
+    var grupoParaEditar by remember { mutableStateOf<Grupo?>(null) }
     
     LaunchedEffect(docenteId) {
         try {
@@ -79,7 +80,8 @@ fun VerGruposDocenteScreen(
             isLoading = isLoading.value,
             onVerEstudiantes = onVerEstudiantes,
             onConfigurarTolerancia = { grupo -> grupoSeleccionado = grupo },
-            onConfigurarHorario = { grupo -> grupoParaHorario = grupo }
+            onConfigurarHorario = { grupo -> grupoParaHorario = grupo },
+            onEditarGrupo = { grupo -> grupoParaEditar = grupo }
         )
     }
     
@@ -107,6 +109,22 @@ fun VerGruposDocenteScreen(
             onSuccess = { }
         )
     }
+    
+    // Mostrar diálogo de edición de grupo
+    grupoParaEditar?.let { grupo ->
+        EditarGrupoDialog(
+            grupo = grupo,
+            configurarGrupoCU = configurarGrupoCU,
+            configurarHorarioCU = configurarHorarioCU,
+            onDismiss = { grupoParaEditar = null },
+            onSuccess = {
+                // Recargar grupos para mostrar los cambios
+                val todosGrupos = grupoRepository.obtenerPorDocente(docenteId)
+                gruposDocente.clear()
+                gruposDocente.addAll(todosGrupos)
+            }
+        )
+    }
 }
 
 // ============================================================================
@@ -125,7 +143,8 @@ private fun VerGruposDocenteContent(
     isLoading: Boolean,
     onVerEstudiantes: (Int) -> Unit,
     onConfigurarTolerancia: (Grupo) -> Unit,
-    onConfigurarHorario: (Grupo) -> Unit
+    onConfigurarHorario: (Grupo) -> Unit,
+    onEditarGrupo: (Grupo) -> Unit
 ) {
     when {
         isLoading -> {
@@ -140,7 +159,8 @@ private fun VerGruposDocenteContent(
                 grupos = grupos,
                 onVerEstudiantes = onVerEstudiantes,
                 onConfigurarTolerancia = onConfigurarTolerancia,
-                onConfigurarHorario = onConfigurarHorario
+                onConfigurarHorario = onConfigurarHorario,
+                onEditarGrupo = onEditarGrupo
             )
         }
     }
@@ -157,7 +177,8 @@ private fun VerGruposList(
     grupos: List<Grupo>,
     onVerEstudiantes: (Int) -> Unit,
     onConfigurarTolerancia: (Grupo) -> Unit,
-    onConfigurarHorario: (Grupo) -> Unit
+    onConfigurarHorario: (Grupo) -> Unit,
+    onEditarGrupo: (Grupo) -> Unit
 ) {
     LazyColumn(
         modifier = Modifier
@@ -171,7 +192,8 @@ private fun VerGruposList(
                 grupo = grupo,
                 onClick = { onVerEstudiantes(grupo.id) },
                 onConfigurarTolerancia = { onConfigurarTolerancia(grupo) },
-                onConfigurarHorario = { onConfigurarHorario(grupo) }
+                onConfigurarHorario = { onConfigurarHorario(grupo) },
+                onEditarGrupo = { onEditarGrupo(grupo) }
             )
         }
     }
@@ -192,9 +214,11 @@ private fun VerGrupoCard(
     grupo: Grupo,
     onClick: () -> Unit,
     onConfigurarTolerancia: () -> Unit,
-    onConfigurarHorario: () -> Unit
+    onConfigurarHorario: () -> Unit,
+    onEditarGrupo: () -> Unit
 ) {
     Card(
+        onClick = onClick,
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(
@@ -290,6 +314,14 @@ private fun VerGrupoCard(
                     )
                 }
             }
+            
+            // Indicador de navegación
+            Icon(
+                imageVector = Icons.Default.ChevronRight,
+                contentDescription = "Ver estudiantes",
+                modifier = Modifier.size(24.dp),
+                tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
+            )
         }
         
         // Fila inferior con botones de acción y tolerancia
@@ -328,9 +360,22 @@ private fun VerGrupoCard(
             Row(
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
+                // Botón para editar grupo (tipo de estrategia y horario)
+                IconButton(
+                    onClick = { onEditarGrupo() },
+                    modifier = Modifier.size(36.dp)
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Edit,
+                        contentDescription = "Editar Grupo",
+                        modifier = Modifier.size(20.dp),
+                        tint = MaterialTheme.colorScheme.secondary
+                    )
+                }
+                
                 // Botón para configurar horarios
                 IconButton(
-                    onClick = onConfigurarHorario,
+                    onClick = { onConfigurarHorario() },
                     modifier = Modifier.size(36.dp)
                 ) {
                     Icon(
@@ -343,7 +388,7 @@ private fun VerGrupoCard(
                 
                 // Botón para configurar tolerancia
                 IconButton(
-                    onClick = onConfigurarTolerancia,
+                    onClick = { onConfigurarTolerancia() },
                     modifier = Modifier.size(36.dp)
                 ) {
                     Icon(
@@ -351,22 +396,6 @@ private fun VerGrupoCard(
                         contentDescription = "Configurar Tolerancia",
                         modifier = Modifier.size(20.dp),
                         tint = MaterialTheme.colorScheme.primary
-                    )
-                }
-                
-                // Botón para ver estudiantes
-                FilledIconButton(
-                    onClick = onClick,
-                    modifier = Modifier.size(36.dp),
-                    colors = IconButtonDefaults.filledIconButtonColors(
-                        containerColor = MaterialTheme.colorScheme.primaryContainer
-                    )
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.ChevronRight,
-                        contentDescription = "Ver Estudiantes",
-                        modifier = Modifier.size(20.dp),
-                        tint = MaterialTheme.colorScheme.onPrimaryContainer
                     )
                 }
             }
