@@ -2,13 +2,13 @@ package com.bo.asistenciaapp.domain.viewmodel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.bo.asistenciaapp.data.repository.HorarioRepository
 import com.bo.asistenciaapp.domain.model.Boleta
 import com.bo.asistenciaapp.domain.model.Grupo
 import com.bo.asistenciaapp.domain.model.Horario
 import com.bo.asistenciaapp.domain.usecase.GrupoCU
 import com.bo.asistenciaapp.domain.usecase.InscripcionCU
 import com.bo.asistenciaapp.domain.utils.ValidationResult
-import com.bo.asistenciaapp.data.repository.HorarioRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -26,6 +26,8 @@ sealed class InscripcionUiState {
 
 /**
  * Modelo que combina un Grupo con sus horarios para mostrar información completa.
+ * 
+ * Utilizado para mostrar información completa de grupos en las pantallas de inscripción.
  */
 data class GrupoConHorariosInscripcion(
     val grupo: Grupo,

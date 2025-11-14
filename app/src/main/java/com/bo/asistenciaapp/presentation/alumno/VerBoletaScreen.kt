@@ -3,9 +3,7 @@ package com.bo.asistenciaapp.presentation.alumno
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
@@ -86,20 +84,24 @@ private fun VerBoletaContent(
     paddingValues: PaddingValues,
     gruposInscritos: List<GrupoConHorariosInscripcion>
 ) {
-    val scrollState = rememberScrollState()
-    
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(paddingValues)
-            .verticalScroll(scrollState)
-            .padding(16.dp),
-        verticalArrangement = Arrangement.spacedBy(16.dp)
-    ) {
-        if (gruposInscritos.isEmpty()) {
+    if (gruposInscritos.isEmpty()) {
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(paddingValues)
+                .padding(16.dp)
+        ) {
             BoletaEmptyState()
-        } else {
-            gruposInscritos.forEach { grupoConHorarios ->
+        }
+    } else {
+        LazyColumn(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(paddingValues),
+            contentPadding = PaddingValues(16.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp)
+        ) {
+            items(gruposInscritos) { grupoConHorarios ->
                 BoletaMateriaCard(
                     grupoConHorarios = grupoConHorarios
                 )
@@ -205,7 +207,7 @@ private fun BoletaMateriaCard(
                         fontWeight = FontWeight.Medium,
                         color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.8f)
                     )
-                    grupoConHorarios.horarios.forEach { horario ->
+                    for (horario in grupoConHorarios.horarios) {
                         Row(
                             modifier = Modifier.fillMaxWidth(),
                             horizontalArrangement = Arrangement.spacedBy(8.dp),
