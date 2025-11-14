@@ -24,30 +24,27 @@ class EstrategiaFalta : IEstrategiaAsistencia {
     
     companion object {
         private const val TAG = "EstrategiaFalta"
-        private const val MINUTOS_LIMITE_FALTA = 30  // Después de estos minutos es falta automática
+        private const val MARGEN_PRESENTE = 10 // 0-10 min = PRESENTE
+        private const val MARGEN_RETRASO = 30  // 11-30 min = RETRASO
     }
     
     /**
-     * Calcula el estado con política estricta basada en tolerancia configurable.
+     * Calcula el estado con política estricta (Estricto).
      * 
-     * ⭐ PATRÓN STRATEGY CON DATOS DE BD:
-     * Ahora usa toleranciaMinutos obtenido de la tabla grupos (configurable por grupo)
-     * en lugar de constantes hardcodeadas. Esta estrategia es más estricta.
+     * ⭐ PATRÓN STRATEGY CON MÁRGENES:
+     * - 0-10 min después del inicio → PRESENTE
+     * - 11-30 min después del inicio → RETRASO
+     * - >30 min después del inicio → FALTA
      * 
-     * Algoritmo:
-     * 1. Convertir ambas horas a minutos desde medianoche
-     * 2. Calcular la diferencia en minutos
-     * 3. Si diferencia > (toleranciaMinutos * 3) → FALTA
-     * 4. Si diferencia > toleranciaMinutos → RETRASO
-     * 5. Si diferencia <= toleranciaMinutos → PRESENTE
+     * Esta estrategia es más estricta y marca FALTA más fácilmente.
      * 
      * @param horaMarcado Hora en que marcó asistencia (HH:mm)
      * @param horaInicio Hora de inicio de clase (HH:mm)
-     * @param toleranciaMinutos Tolerancia obtenida de la BD (por defecto 10)
-     * @return "FALTA", "RETRASO" o "PRESENTE" según el caso
+     * @param toleranciaMinutos No se usa (márgenes fijos de 15 min)
+     * @return "PRESENTE", "RETRASO" o "FALTA" según el caso
      */
     override fun calcularEstado(horaMarcado: String, horaInicio: String, toleranciaMinutos: Int): String {
-        Log.d(TAG, "Evaluando asistencia - Marcado: $horaMarcado, Inicio: $horaInicio, Tolerancia: $toleranciaMinutos min")
+        Log.d(TAG, "Evaluando asistencia (Estricto) - Marcado: $horaMarcado, Inicio: $horaInicio")
         
         try {
             // Convertir horas a minutos desde medianoche
@@ -57,32 +54,24 @@ class EstrategiaFalta : IEstrategiaAsistencia {
             // Calcular diferencia
             val diferencia = minutosMarcado - minutosInicio
             
-            // ⭐ Calcular límites basados en tolerancia de la BD
-            val limiteFalta = toleranciaMinutos * 3  // Después de 3x la tolerancia es falta
+            Log.d(TAG, "Diferencia: $diferencia minutos | Márgenes: 0-10 PRESENTE, 11-30 RETRASO, >30 FALTA")
             
-            Log.d(TAG, "Diferencia: $diferencia minutos | Tolerancia: $toleranciaMinutos | Límite falta: $limiteFalta")
-            
-            // Lógica de la estrategia: FALTA si llega muy tarde
+            // Lógica con márgenes (estricta)
             val estado = when {
-                diferencia > limiteFalta -> {
-                    // Llegó muy tarde (más del límite de falta)
-                    Log.d(TAG, "Llegó muy tarde (diferencia > $limiteFalta min) → FALTA")
-                    "FALTA"
+                diferencia <= MARGEN_PRESENTE -> {
+                    // Llegó a tiempo (0-10 min)
+                    Log.d(TAG, "Llegó a tiempo (0-10 min) → PRESENTE")
+                    "PRESENTE"
                 }
-                diferencia > toleranciaMinutos -> {
-                    // Llegó con retraso moderado (entre tolerancia y límite de falta)
-                    Log.d(TAG, "Llegó con retraso (diferencia entre $toleranciaMinutos y $limiteFalta min)")
+                diferencia <= MARGEN_RETRASO -> {
+                    // Llegó con retraso (11-30 min)
+                    Log.d(TAG, "Llegó con retraso (11-30 min) → RETRASO")
                     "RETRASO"
                 }
-                diferencia >= 0 -> {
-                    // Llegó a tiempo o con pequeño retraso (dentro de tolerancia)
-                    Log.d(TAG, "Llegó a tiempo (diferencia <= $toleranciaMinutos min)")
-                    "PRESENTE"
-                }
                 else -> {
-                    // Llegó antes de la hora de inicio (diferencia negativa)
-                    Log.d(TAG, "Llegó antes de la hora de inicio")
-                    "PRESENTE"
+                    // Llegó muy tarde (>30 min) → FALTA
+                    Log.d(TAG, "Llegó muy tarde (>30 min) → FALTA")
+                    "FALTA"
                 }
             }
             

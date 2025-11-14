@@ -16,11 +16,9 @@ import androidx.compose.ui.unit.dp
 import com.bo.asistenciaapp.data.local.AppDatabase
 import com.bo.asistenciaapp.data.local.UserSession
 import com.bo.asistenciaapp.data.repository.GrupoRepository
-import com.bo.asistenciaapp.data.repository.HorarioRepository
 import com.bo.asistenciaapp.domain.model.Grupo
-import com.bo.asistenciaapp.domain.usecase.ConfigurarGrupoCU
-import com.bo.asistenciaapp.domain.usecase.ConfigurarHorarioCU
 import com.bo.asistenciaapp.presentation.common.UserLayout
+import androidx.compose.ui.graphics.Color
 
 /**
  * Pantalla para mostrar los grupos asignados al docente.
@@ -36,7 +34,8 @@ import com.bo.asistenciaapp.presentation.common.UserLayout
 @Composable
 fun VerGruposDocenteScreen(
     onBack: () -> Unit,
-    onVerEstudiantes: (Int) -> Unit
+    onVerEstudiantes: (Int) -> Unit,
+    onConfigurarHorarios: (Int) -> Unit
 ) {
     val context = LocalContext.current
     val session = remember { UserSession(context) }
@@ -45,18 +44,10 @@ fun VerGruposDocenteScreen(
     // Inicializar dependencias
     val database = remember { AppDatabase.getInstance(context) }
     val grupoRepository = remember { GrupoRepository(database) }
-    val horarioRepository = remember { HorarioRepository(database) }
-    val configurarGrupoCU = remember { ConfigurarGrupoCU(grupoRepository) }
-    val configurarHorarioCU = remember { ConfigurarHorarioCU(horarioRepository) }
     
     // Obtener grupos del docente
     val gruposDocente = remember { mutableStateListOf<Grupo>() }
     val isLoading = remember { mutableStateOf(true) }
-    
-    // Estado para el diálogo de configuración
-    var grupoSeleccionado by remember { mutableStateOf<Grupo?>(null) }
-    var grupoParaHorario by remember { mutableStateOf<Grupo?>(null) }
-    var grupoParaEditar by remember { mutableStateOf<Grupo?>(null) }
     
     LaunchedEffect(docenteId) {
         try {
@@ -79,50 +70,7 @@ fun VerGruposDocenteScreen(
             grupos = gruposDocente,
             isLoading = isLoading.value,
             onVerEstudiantes = onVerEstudiantes,
-            onConfigurarTolerancia = { grupo -> grupoSeleccionado = grupo },
-            onConfigurarHorario = { grupo -> grupoParaHorario = grupo },
-            onEditarGrupo = { grupo -> grupoParaEditar = grupo }
-        )
-    }
-    
-    // Mostrar diálogo de configuración de tolerancia si hay un grupo seleccionado
-    grupoSeleccionado?.let { grupo ->
-        ConfigurarToleranciaDialog(
-            grupo = grupo,
-            configurarGrupoCU = configurarGrupoCU,
-            onDismiss = { grupoSeleccionado = null },
-            onSuccess = {
-                // Recargar grupos para mostrar la tolerancia actualizada
-                val todosGrupos = grupoRepository.obtenerPorDocente(docenteId)
-                gruposDocente.clear()
-                gruposDocente.addAll(todosGrupos)
-            }
-        )
-    }
-    
-    // Mostrar diálogo de configuración de horarios
-    grupoParaHorario?.let { grupo ->
-        ConfigurarHorarioDialog(
-            grupo = grupo,
-            configurarHorarioCU = configurarHorarioCU,
-            onDismiss = { grupoParaHorario = null },
-            onSuccess = { }
-        )
-    }
-    
-    // Mostrar diálogo de edición de grupo
-    grupoParaEditar?.let { grupo ->
-        EditarGrupoDialog(
-            grupo = grupo,
-            configurarGrupoCU = configurarGrupoCU,
-            configurarHorarioCU = configurarHorarioCU,
-            onDismiss = { grupoParaEditar = null },
-            onSuccess = {
-                // Recargar grupos para mostrar los cambios
-                val todosGrupos = grupoRepository.obtenerPorDocente(docenteId)
-                gruposDocente.clear()
-                gruposDocente.addAll(todosGrupos)
-            }
+            onConfigurarHorarios = onConfigurarHorarios
         )
     }
 }
@@ -142,9 +90,7 @@ private fun VerGruposDocenteContent(
     grupos: List<Grupo>,
     isLoading: Boolean,
     onVerEstudiantes: (Int) -> Unit,
-    onConfigurarTolerancia: (Grupo) -> Unit,
-    onConfigurarHorario: (Grupo) -> Unit,
-    onEditarGrupo: (Grupo) -> Unit
+    onConfigurarHorarios: (Int) -> Unit
 ) {
     when {
         isLoading -> {
@@ -158,9 +104,7 @@ private fun VerGruposDocenteContent(
                 paddingValues = paddingValues,
                 grupos = grupos,
                 onVerEstudiantes = onVerEstudiantes,
-                onConfigurarTolerancia = onConfigurarTolerancia,
-                onConfigurarHorario = onConfigurarHorario,
-                onEditarGrupo = onEditarGrupo
+                onConfigurarHorarios = onConfigurarHorarios
             )
         }
     }
@@ -176,9 +120,7 @@ private fun VerGruposList(
     paddingValues: PaddingValues,
     grupos: List<Grupo>,
     onVerEstudiantes: (Int) -> Unit,
-    onConfigurarTolerancia: (Grupo) -> Unit,
-    onConfigurarHorario: (Grupo) -> Unit,
-    onEditarGrupo: (Grupo) -> Unit
+    onConfigurarHorarios: (Int) -> Unit
 ) {
     LazyColumn(
         modifier = Modifier
@@ -191,9 +133,7 @@ private fun VerGruposList(
             VerGrupoCard(
                 grupo = grupo,
                 onClick = { onVerEstudiantes(grupo.id) },
-                onConfigurarTolerancia = { onConfigurarTolerancia(grupo) },
-                onConfigurarHorario = { onConfigurarHorario(grupo) },
-                onEditarGrupo = { onEditarGrupo(grupo) }
+                onConfigurarHorarios = { onConfigurarHorarios(grupo.id) }
             )
         }
     }
@@ -213,9 +153,7 @@ private fun VerGruposList(
 private fun VerGrupoCard(
     grupo: Grupo,
     onClick: () -> Unit,
-    onConfigurarTolerancia: () -> Unit,
-    onConfigurarHorario: () -> Unit,
-    onEditarGrupo: () -> Unit
+    onConfigurarHorarios: () -> Unit
 ) {
     Card(
         onClick = onClick,
@@ -337,67 +275,38 @@ private fun VerGrupoCard(
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
-            // Badge de tolerancia
-            Row(
-                horizontalArrangement = Arrangement.spacedBy(6.dp),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Icon(
-                    imageVector = Icons.Default.Timer,
-                    contentDescription = null,
-                    modifier = Modifier.size(16.dp),
-                    tint = MaterialTheme.colorScheme.tertiary
-                )
-                Text(
-                    text = "Tolerancia: ${grupo.toleranciaMinutos} min",
-                    style = MaterialTheme.typography.bodySmall,
-                    fontWeight = FontWeight.Medium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-            }
-            
-            // Botones de acción
-            Row(
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                // Botón para editar grupo (tipo de estrategia y horario)
-                IconButton(
-                    onClick = { onEditarGrupo() },
-                    modifier = Modifier.size(36.dp)
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.Edit,
-                        contentDescription = "Editar Grupo",
-                        modifier = Modifier.size(20.dp),
-                        tint = MaterialTheme.colorScheme.secondary
-                    )
-                }
-                
-                // Botón para configurar horarios
-                IconButton(
-                    onClick = { onConfigurarHorario() },
-                    modifier = Modifier.size(36.dp)
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.Schedule,
-                        contentDescription = "Configurar Horarios",
-                        modifier = Modifier.size(20.dp),
-                        tint = MaterialTheme.colorScheme.tertiary
-                    )
-                }
-                
-                // Botón para configurar tolerancia
-                IconButton(
-                    onClick = { onConfigurarTolerancia() },
-                    modifier = Modifier.size(36.dp)
+            // Badge de nivel de tolerancia
+            grupo.tipoEstrategia?.let { estrategia ->
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(6.dp),
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
                     Icon(
                         imageVector = Icons.Default.Settings,
-                        contentDescription = "Configurar Tolerancia",
-                        modifier = Modifier.size(20.dp),
-                        tint = MaterialTheme.colorScheme.primary
+                        contentDescription = null,
+                        modifier = Modifier.size(16.dp),
+                        tint = obtenerColorNivelTolerancia(estrategia)
+                    )
+                    Text(
+                        text = obtenerNombreNivelTolerancia(estrategia),
+                        style = MaterialTheme.typography.bodySmall,
+                        fontWeight = FontWeight.Medium,
+                        color = obtenerColorNivelTolerancia(estrategia)
                     )
                 }
+            }
+            
+            // Botón para configurar horarios
+            IconButton(
+                onClick = { onConfigurarHorarios() },
+                modifier = Modifier.size(36.dp)
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Schedule,
+                    contentDescription = "Configurar Horarios",
+                    modifier = Modifier.size(20.dp),
+                    tint = MaterialTheme.colorScheme.primary
+                )
             }
         }
     }
@@ -460,6 +369,31 @@ private fun VerGruposEmptyState(paddingValues: PaddingValues) {
                 )
             }
         }
+    }
+}
+
+/**
+ * Obtiene el nombre del nivel de tolerancia basado en la estrategia.
+ */
+private fun obtenerNombreNivelTolerancia(estrategia: String): String {
+    return when (estrategia) {
+        "FALTA" -> "Tolerancia: Estricto"
+        "RETRASO" -> "Tolerancia: Flexible"
+        "PRESENTE" -> "Tolerancia: Muy Flexible"
+        else -> "Sin configurar"
+    }
+}
+
+/**
+ * Obtiene el color del nivel de tolerancia basado en la estrategia.
+ */
+@Composable
+private fun obtenerColorNivelTolerancia(estrategia: String): Color {
+    return when (estrategia) {
+        "FALTA" -> MaterialTheme.colorScheme.error
+        "RETRASO" -> MaterialTheme.colorScheme.tertiary
+        "PRESENTE" -> MaterialTheme.colorScheme.primary
+        else -> MaterialTheme.colorScheme.onSurfaceVariant
     }
 }
 

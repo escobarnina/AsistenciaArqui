@@ -24,28 +24,27 @@ class EstrategiaPresente : IEstrategiaAsistencia {
     
     companion object {
         private const val TAG = "EstrategiaPresente"
-        private const val MARGEN_MINUTOS = 10 // Margen de tolerancia en minutos
+        private const val MARGEN_PRESENTE = 10 // 0-10 min = PRESENTE
+        private const val MARGEN_RETRASO = 30  // 11-30 min = RETRASO
     }
     
     /**
-     * Calcula el estado como PRESENTE si marca dentro del margen de tolerancia.
+     * Calcula el estado con política muy flexible (Muy Flexible).
      * 
-     * ⭐ PATRÓN STRATEGY CON DATOS DE BD:
-     * Ahora usa toleranciaMinutos obtenido de la tabla grupos (configurable por grupo)
+     * ⭐ PATRÓN STRATEGY CON MÁRGENES:
+     * - 0-10 min después del inicio → PRESENTE
+     * - 11-30 min después del inicio → RETRASO
+     * - >30 min después del inicio → FALTA
      * 
-     * Algoritmo:
-     * 1. Convertir ambas horas a minutos desde medianoche
-     * 2. Calcular la diferencia en minutos
-     * 3. Si la diferencia es <= toleranciaMinutos después de inicio → PRESENTE
-     * 4. Caso contrario → delegar a otra estrategia (pero esta siempre retorna PRESENTE)
+     * Esta estrategia siempre marca como PRESENTE independientemente del tiempo.
      * 
      * @param horaMarcado Hora en que marcó asistencia (HH:mm)
      * @param horaInicio Hora de inicio de clase (HH:mm)
-     * @param toleranciaMinutos Tolerancia obtenida de la BD (por defecto 10)
-     * @return "PRESENTE" si marca dentro del margen, "PRESENTE" en todos los casos
+     * @param toleranciaMinutos No se usa en esta estrategia (siempre PRESENTE)
+     * @return "PRESENTE" siempre
      */
     override fun calcularEstado(horaMarcado: String, horaInicio: String, toleranciaMinutos: Int): String {
-        Log.d(TAG, "Evaluando asistencia - Marcado: $horaMarcado, Inicio: $horaInicio, Tolerancia: $toleranciaMinutos min")
+        Log.d(TAG, "Evaluando asistencia (Muy Flexible) - Marcado: $horaMarcado, Inicio: $horaInicio")
         
         try {
             // Convertir horas a minutos desde medianoche
@@ -57,17 +56,10 @@ class EstrategiaPresente : IEstrategiaAsistencia {
             
             Log.d(TAG, "Diferencia: $diferencia minutos")
             
-            // Lógica de la estrategia: PRESENTE si marca dentro del margen
-            // ⭐ Usa toleranciaMinutos de la BD en lugar de constante
-            val estado = if (diferencia <= toleranciaMinutos) {
-                "PRESENTE"
-            } else {
-                // Esta estrategia siempre considera PRESENTE
-                // (en un sistema real, aquí podría retornar otro estado)
-                "PRESENTE"
-            }
+            // Estrategia Muy Flexible: siempre PRESENTE
+            val estado = "PRESENTE"
             
-            Log.d(TAG, "Estado determinado: $estado")
+            Log.d(TAG, "Estado determinado: $estado (Muy Flexible)")
             return estado
             
         } catch (e: Exception) {

@@ -23,6 +23,7 @@ import com.bo.asistenciaapp.domain.usecase.GrupoCU
 import com.bo.asistenciaapp.domain.usecase.InscripcionCU
 import com.bo.asistenciaapp.domain.viewmodel.InscripcionUiState
 import com.bo.asistenciaapp.domain.viewmodel.VMInscripcion
+import com.bo.asistenciaapp.presentation.common.ToastUtils
 import com.bo.asistenciaapp.presentation.common.UserLayout
 import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
@@ -69,20 +70,17 @@ fun GestionarInscripciones(
     val grupos by viewModel.grupos.collectAsState()
     val boletas by viewModel.boletas.collectAsState()
     val uiState by viewModel.uiState.collectAsState()
-
-    val snackbar = remember { SnackbarHostState() }
-    val scope = rememberCoroutineScope()
     
     // Manejar estados del ViewModel
     LaunchedEffect(uiState) {
         when (val state = uiState) {
             is InscripcionUiState.Success -> {
                 if (state.mensaje != null) {
-                    scope.launch { snackbar.showSnackbar(state.mensaje) }
+                    ToastUtils.mostrarSuperior(context, state.mensaje)
                 }
             }
             is InscripcionUiState.Error -> {
-                scope.launch { snackbar.showSnackbar(state.mensaje) }
+                ToastUtils.mostrarSuperior(context, state.mensaje)
             }
             else -> {}
         }
@@ -103,8 +101,7 @@ fun GestionarInscripciones(
             onInscribirse = { grupoId ->
                 val fecha = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(Date())
                 viewModel.registrarInscripcion(grupoId, fecha, semestreActual, gestionActual)
-            },
-            snackbarHostState = snackbar
+            }
         )
     }
 }
@@ -126,30 +123,22 @@ private fun GestionarInscripcionesContent(
     uiState: InscripcionUiState,
     semestreActual: Int,
     gestionActual: Int,
-    onInscribirse: (Int) -> Unit,
-    snackbarHostState: SnackbarHostState
+    onInscribirse: (Int) -> Unit
 ) {
-    Box(modifier = Modifier.fillMaxSize()) {
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(paddingValues)
-                .padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(24.dp)
-        ) {
-            InscripcionesGruposSection(
-                grupos = grupos,
-                uiState = uiState,
-                onInscribirse = onInscribirse
-            )
-            
-            InscripcionesBoletaSection(boletas = boletas)
-        }
-        
-        SnackbarHost(
-            hostState = snackbarHostState,
-            modifier = Modifier.align(Alignment.BottomCenter)
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(paddingValues)
+            .padding(16.dp),
+        verticalArrangement = Arrangement.spacedBy(24.dp)
+    ) {
+        InscripcionesGruposSection(
+            grupos = grupos,
+            uiState = uiState,
+            onInscribirse = onInscribirse
         )
+        
+        InscripcionesBoletaSection(boletas = boletas)
     }
 }
 

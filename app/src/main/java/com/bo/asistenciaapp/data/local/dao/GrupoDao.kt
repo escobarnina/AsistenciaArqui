@@ -12,11 +12,30 @@ class GrupoDao(private val database: SQLiteDatabase) {
     
     /**
      * Obtiene todos los grupos.
+     * Calcula dinámicamente el número de inscritos contando las boletas.
      */
     fun obtenerTodos(): List<Grupo> {
         val lista = mutableListOf<Grupo>()
         database.rawQuery(
-            "SELECT id, materia_id, materia_nombre, docente_id, docente_nombre, semestre, gestion, capacidad, nro_inscritos, grupo, tolerancia_minutos, tipo_estrategia FROM grupos",
+            """
+                SELECT 
+                    g.id, 
+                    g.materia_id, 
+                    g.materia_nombre, 
+                    g.docente_id, 
+                    g.docente_nombre, 
+                    g.semestre, 
+                    g.gestion, 
+                    g.capacidad, 
+                    COALESCE(COUNT(DISTINCT b.alumno_id), 0) as nro_inscritos, 
+                    g.grupo, 
+                    g.tolerancia_minutos, 
+                    g.tipo_estrategia 
+                FROM grupos g
+                LEFT JOIN boletas b ON b.grupo_id = g.id
+                GROUP BY g.id, g.materia_id, g.materia_nombre, g.docente_id, g.docente_nombre, 
+                         g.semestre, g.gestion, g.capacidad, g.grupo, g.tolerancia_minutos, g.tipo_estrategia
+            """.trimIndent(),
             null
         ).use { c ->
             while (c.moveToNext()) {
@@ -71,11 +90,31 @@ class GrupoDao(private val database: SQLiteDatabase) {
     
     /**
      * Obtiene todos los grupos asignados a un docente específico.
+     * Calcula dinámicamente el número de inscritos contando las boletas.
      */
     fun obtenerPorDocente(docenteId: Int): List<Grupo> {
         val lista = mutableListOf<Grupo>()
         database.rawQuery(
-            "SELECT id, materia_id, materia_nombre, docente_id, docente_nombre, semestre, gestion, capacidad, nro_inscritos, grupo, tolerancia_minutos, tipo_estrategia FROM grupos WHERE docente_id=?",
+            """
+                SELECT 
+                    g.id, 
+                    g.materia_id, 
+                    g.materia_nombre, 
+                    g.docente_id, 
+                    g.docente_nombre, 
+                    g.semestre, 
+                    g.gestion, 
+                    g.capacidad, 
+                    COALESCE(COUNT(DISTINCT b.alumno_id), 0) as nro_inscritos, 
+                    g.grupo, 
+                    g.tolerancia_minutos, 
+                    g.tipo_estrategia 
+                FROM grupos g
+                LEFT JOIN boletas b ON b.grupo_id = g.id
+                WHERE g.docente_id = ?
+                GROUP BY g.id, g.materia_id, g.materia_nombre, g.docente_id, g.docente_nombre, 
+                         g.semestre, g.gestion, g.capacidad, g.grupo, g.tolerancia_minutos, g.tipo_estrategia
+            """.trimIndent(),
             arrayOf(docenteId.toString())
         ).use { c ->
             while (c.moveToNext()) {
@@ -102,11 +141,31 @@ class GrupoDao(private val database: SQLiteDatabase) {
     
     /**
      * Obtiene un grupo por su ID.
+     * Calcula dinámicamente el número de inscritos contando las boletas.
      * ⭐ PATRÓN STRATEGY: Usado para obtener la tolerancia del grupo
      */
     fun obtenerPorId(id: Int): Grupo? {
         database.rawQuery(
-            "SELECT id, materia_id, materia_nombre, docente_id, docente_nombre, semestre, gestion, capacidad, nro_inscritos, grupo, tolerancia_minutos, tipo_estrategia FROM grupos WHERE id=?",
+            """
+                SELECT 
+                    g.id, 
+                    g.materia_id, 
+                    g.materia_nombre, 
+                    g.docente_id, 
+                    g.docente_nombre, 
+                    g.semestre, 
+                    g.gestion, 
+                    g.capacidad, 
+                    COALESCE(COUNT(DISTINCT b.alumno_id), 0) as nro_inscritos, 
+                    g.grupo, 
+                    g.tolerancia_minutos, 
+                    g.tipo_estrategia 
+                FROM grupos g
+                LEFT JOIN boletas b ON b.grupo_id = g.id
+                WHERE g.id = ?
+                GROUP BY g.id, g.materia_id, g.materia_nombre, g.docente_id, g.docente_nombre, 
+                         g.semestre, g.gestion, g.capacidad, g.grupo, g.tolerancia_minutos, g.tipo_estrategia
+            """.trimIndent(),
             arrayOf(id.toString())
         ).use { c ->
             return if (c.moveToFirst()) {

@@ -5,7 +5,6 @@ import android.content.Context
 import android.os.Build
 import android.os.Environment
 import android.provider.MediaStore
-import android.widget.Toast
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -28,6 +27,7 @@ import com.bo.asistenciaapp.data.export.adapter.DataExportAdapter
 import com.bo.asistenciaapp.domain.model.Asistencia
 import com.bo.asistenciaapp.domain.model.ExportResult
 import com.bo.asistenciaapp.domain.usecase.ExportarAsistenciaCU
+import com.bo.asistenciaapp.presentation.common.ToastUtils
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -143,7 +143,7 @@ fun ExportarAsistenciasDialog(
                                         },
                                         onError = { mensaje ->
                                             exportando = false
-                                            Toast.makeText(context, mensaje, Toast.LENGTH_LONG).show()
+                                            ToastUtils.mostrarSuperior(context, mensaje)
                                         }
                                     )
                                 }
@@ -170,7 +170,7 @@ fun ExportarAsistenciasDialog(
                                         },
                                         onError = { mensaje ->
                                             exportando = false
-                                            Toast.makeText(context, mensaje, Toast.LENGTH_LONG).show()
+                                            ToastUtils.mostrarSuperior(context, mensaje)
                                         }
                                     )
                                 }
@@ -297,13 +297,12 @@ private suspend fun exportarAsistencias(
                         
                         if (rutaArchivo != null) {
                             // Mostrar mensaje de éxito
-                            Toast.makeText(
+                            ToastUtils.mostrarSuperior(
                                 context,
                                 "✓ Archivo exportado exitosamente\n" +
                                 "${resultado.nombreCompleto} (${resultado.tamanoFormateado()})\n" +
-                                "Ubicación: Downloads",
-                                Toast.LENGTH_LONG
-                            ).show()
+                                "Ubicación: Downloads"
+                            )
                             
                             onSuccess()
                         } else {

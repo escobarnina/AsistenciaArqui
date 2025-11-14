@@ -17,6 +17,7 @@ import com.bo.asistenciaapp.presentation.admin.GestionarUsuariosScreen
 import com.bo.asistenciaapp.presentation.alumno.AlumnoHomeScreen
 import com.bo.asistenciaapp.presentation.alumno.GestionarAsistencia
 import com.bo.asistenciaapp.presentation.alumno.GestionarInscripciones
+import com.bo.asistenciaapp.presentation.docente.ConfigurarHorariosScreen
 import com.bo.asistenciaapp.presentation.docente.DocenteHomeScreen
 import com.bo.asistenciaapp.presentation.docente.VerEstudiantesGrupoScreen
 import com.bo.asistenciaapp.presentation.docente.VerGruposDocenteScreen
@@ -188,7 +189,18 @@ private fun DocenteRoutes(
             onBack = { navController.popBackStack() },
             onVerEstudiantes = { grupoId ->
                 navController.navigate("${NavRoutes.DocenteEstudiantes}/$grupoId")
+            },
+            onConfigurarHorarios = { grupoId ->
+                navController.navigate("${NavRoutes.DocenteConfigurarHorarios}/$grupoId")
             }
+        )
+    }
+    
+    builder.composable("${NavRoutes.DocenteConfigurarHorarios}/{grupoId}") { backStackEntry ->
+        val grupoId = backStackEntry.arguments?.getString("grupoId")?.toIntOrNull() ?: -1
+        ConfigurarHorariosScreen(
+            grupoId = grupoId,
+            onBack = { navController.popBackStack() }
         )
     }
     
@@ -321,6 +333,7 @@ private object NavRoutes {
     const val DocenteHome = "docenteHome"
     const val DocenteGrupos = "docenteGrupos"
     const val DocenteEstudiantes = "docenteEstudiantes"
+    const val DocenteConfigurarHorarios = "docenteConfigurarHorarios"
     
     // Alumno
     const val AlumnoHome = "alumnoHome"

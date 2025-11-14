@@ -26,6 +26,7 @@ import com.bo.asistenciaapp.domain.model.Asistencia
 import com.bo.asistenciaapp.domain.model.Grupo
 import com.bo.asistenciaapp.domain.viewmodel.AsistenciaUiState
 import com.bo.asistenciaapp.domain.viewmodel.VMAsistencia
+import com.bo.asistenciaapp.presentation.common.ToastUtils
 import com.bo.asistenciaapp.presentation.common.UserLayout
 import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
@@ -69,19 +70,16 @@ fun GestionarAsistencia(onBack: () -> Unit) {
     val asistencias by viewModel.asistencias.collectAsState()
     val uiState by viewModel.uiState.collectAsState()
     
-    val scope = rememberCoroutineScope()
-    val snackbar = remember { SnackbarHostState() }
-    
     // Manejar estados del ViewModel
     LaunchedEffect(uiState) {
         when (val state = uiState) {
             is AsistenciaUiState.Success -> {
                 if (state.mensaje != null) {
-                    scope.launch { snackbar.showSnackbar(state.mensaje) }
+                    ToastUtils.mostrarSuperior(context, state.mensaje)
                 }
             }
             is AsistenciaUiState.Error -> {
-                scope.launch { snackbar.showSnackbar(state.mensaje) }
+                ToastUtils.mostrarSuperior(context, state.mensaje)
             }
             else -> {}
         }
@@ -100,8 +98,7 @@ fun GestionarAsistencia(onBack: () -> Unit) {
             onMarcarAsistencia = { grupoId ->
                 val fecha = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(Date())
                 viewModel.marcarAsistencia(grupoId, fecha)
-            },
-            snackbarHostState = snackbar
+            }
         )
     }
 }
@@ -121,30 +118,22 @@ private fun GestionarAsistenciaContent(
     grupos: List<Grupo>,
     asistencias: List<Asistencia>,
     uiState: AsistenciaUiState,
-    onMarcarAsistencia: (Int) -> Unit,
-    snackbarHostState: SnackbarHostState
+    onMarcarAsistencia: (Int) -> Unit
 ) {
-    Box(modifier = Modifier.fillMaxSize()) {
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(paddingValues)
-                .padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(24.dp)
-        ) {
-            AsistenciaGruposSection(
-                grupos = grupos,
-                uiState = uiState,
-                onMarcarAsistencia = onMarcarAsistencia
-            )
-            
-            AsistenciaHistorialSection(asistencias = asistencias)
-        }
-        
-        SnackbarHost(
-            hostState = snackbarHostState,
-            modifier = Modifier.align(Alignment.BottomCenter)
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(paddingValues)
+            .padding(16.dp),
+        verticalArrangement = Arrangement.spacedBy(24.dp)
+    ) {
+        AsistenciaGruposSection(
+            grupos = grupos,
+            uiState = uiState,
+            onMarcarAsistencia = onMarcarAsistencia
         )
+        
+        AsistenciaHistorialSection(asistencias = asistencias)
     }
 }
 
