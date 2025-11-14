@@ -7,10 +7,11 @@ package com.bo.asistenciaapp.domain.utils
  */
 sealed class ValidationResult {
     object Success : ValidationResult()
+    data class SuccessWithData<T>(val data: T) : ValidationResult()
     data class Error(val message: String) : ValidationResult()
     
     val isValid: Boolean
-        get() = this is Success
+        get() = this is Success || this is SuccessWithData<*>
     
     val errorMessage: String?
         get() = (this as? Error)?.message

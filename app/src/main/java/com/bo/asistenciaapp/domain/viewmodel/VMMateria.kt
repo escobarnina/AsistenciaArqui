@@ -68,6 +68,10 @@ class VMMateria(
                         recargar()
                         _uiState.value = MateriaUiState.Success("Materia agregada exitosamente")
                     }
+                    is ValidationResult.SuccessWithData<*> -> {
+                        recargar()
+                        _uiState.value = MateriaUiState.Success("Materia agregada exitosamente")
+                    }
                     is ValidationResult.Error -> {
                         _uiState.value = MateriaUiState.Error(result.message)
                     }
@@ -89,6 +93,10 @@ class VMMateria(
                 
                 when (result) {
                     is ValidationResult.Success -> {
+                        recargar()
+                        _uiState.value = MateriaUiState.Success("Materia eliminada exitosamente")
+                    }
+                    is ValidationResult.SuccessWithData<*> -> {
                         recargar()
                         _uiState.value = MateriaUiState.Success("Materia eliminada exitosamente")
                     }

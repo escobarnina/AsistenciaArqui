@@ -94,6 +94,10 @@ class VMGrupo(
                         recargar()
                         _uiState.value = GrupoUiState.Success("Grupo agregado exitosamente")
                     }
+                    is ValidationResult.SuccessWithData<*> -> {
+                        recargar()
+                        _uiState.value = GrupoUiState.Success("Grupo agregado exitosamente")
+                    }
                     is ValidationResult.Error -> {
                         _uiState.value = GrupoUiState.Error(result.message)
                     }
@@ -115,6 +119,10 @@ class VMGrupo(
                 
                 when (result) {
                     is ValidationResult.Success -> {
+                        recargar()
+                        _uiState.value = GrupoUiState.Success("Grupo eliminado exitosamente")
+                    }
+                    is ValidationResult.SuccessWithData<*> -> {
                         recargar()
                         _uiState.value = GrupoUiState.Success("Grupo eliminado exitosamente")
                     }

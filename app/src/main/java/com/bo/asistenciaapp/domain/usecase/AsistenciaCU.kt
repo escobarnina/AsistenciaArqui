@@ -81,6 +81,19 @@ class AsistenciaCU(private val asistenciaRepository: AsistenciaRepository) {
         }
         return asistenciaRepository.obtenerPorAlumno(alumnoId)
     }
+    
+    /**
+     * Obtiene los horarios de un grupo específico.
+     * 
+     * @param grupoId ID del grupo
+     * @return Lista de horarios del grupo
+     */
+    fun obtenerHorariosGrupo(grupoId: Int): List<com.bo.asistenciaapp.domain.model.Horario> {
+        if (!Validators.isPositive(grupoId)) {
+            return emptyList()
+        }
+        return asistenciaRepository.obtenerHorariosGrupo(grupoId)
+    }
 
     /**
      * Valida los datos de una asistencia antes de registrarla.
@@ -135,10 +148,23 @@ class AsistenciaCU(private val asistenciaRepository: AsistenciaRepository) {
             return validation
         }
         
-        // Validar que el alumno puede marcar asistencia (regla de negocio)
+        // Validar que el alumno está inscrito primero
+        if (!asistenciaRepository.estaInscrito(alumnoId, grupoId)) {
+            Log.e(TAG, "El alumno no está inscrito en el grupo")
+            return ValidationResult.Error("No puedes marcar asistencia: no estás inscrito en este grupo")
+        }
+        
+        // Validar que el alumno puede marcar asistencia (regla de negocio: día y hora correcta)
         if (!puedeMarcarAsistencia(alumnoId, grupoId)) {
-            Log.e(TAG, "El alumno no puede marcar asistencia")
-            return ValidationResult.Error("No se puede marcar asistencia: no es el día/hora correcta o no está inscrito")
+            Log.e(TAG, "El alumno no puede marcar asistencia: fuera del horario")
+            // Obtener información del horario para mensaje más específico
+            val horarios = asistenciaRepository.obtenerHorariosGrupo(grupoId)
+            if (horarios.isNotEmpty()) {
+                val diasHorarios = horarios.joinToString(", ") { "${it.dia} ${it.horaInicio}-${it.horaFin}" }
+                return ValidationResult.Error("No puedes marcar asistencia ahora.\nHorarios del grupo:\n$diasHorarios")
+            } else {
+                return ValidationResult.Error("No puedes marcar asistencia: no es el día u hora correcta según el horario del grupo")
+            }
         }
         
         // ⭐ PATRÓN STRATEGY CON DATOS DE BD:
@@ -168,8 +194,8 @@ class AsistenciaCU(private val asistenciaRepository: AsistenciaRepository) {
         
         Log.d(TAG, "Asistencia registrada exitosamente con estado: $estado")
         
-        // Retornar éxito con el estado calculado
-        return ValidationResult.Success
+        // Retornar éxito con el estado calculado en el mensaje
+        return ValidationResult.SuccessWithData(estado)
     }
     
     /**

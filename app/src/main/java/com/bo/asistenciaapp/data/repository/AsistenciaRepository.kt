@@ -2,6 +2,7 @@ package com.bo.asistenciaapp.data.repository
 
 import com.bo.asistenciaapp.data.local.AppDatabase
 import com.bo.asistenciaapp.domain.model.Asistencia
+import com.bo.asistenciaapp.domain.model.Horario
 
 /**
  * Responsabilidad: Gestionar todas las operaciones relacionadas con asistencias.
@@ -134,6 +135,16 @@ class AsistenciaRepository(private val database: AppDatabase) {
      */
     fun estaInscrito(alumnoId: Int, grupoId: Int): Boolean {
         return database.asistenciaDao.estaInscrito(alumnoId, grupoId)
+    }
+    
+    /**
+     * Obtiene los horarios de un grupo específico.
+     * 
+     * @param grupoId ID del grupo
+     * @return Lista de horarios del grupo
+     */
+    fun obtenerHorariosGrupo(grupoId: Int): List<Horario> {
+        return database.horarioDao.obtenerPorGrupo(grupoId)
     }
 }
 

@@ -101,6 +101,10 @@ class VMUsuario(
                         recargar()
                         _uiState.value = UsuarioUiState.Success("Usuario agregado exitosamente")
                     }
+                    is ValidationResult.SuccessWithData<*> -> {
+                        recargar()
+                        _uiState.value = UsuarioUiState.Success("Usuario agregado exitosamente")
+                    }
                     is ValidationResult.Error -> {
                         _uiState.value = UsuarioUiState.Error(result.message)
                     }
@@ -130,6 +134,10 @@ class VMUsuario(
                         recargar()
                         _uiState.value = UsuarioUiState.Success("Usuario actualizado exitosamente")
                     }
+                    is ValidationResult.SuccessWithData<*> -> {
+                        recargar()
+                        _uiState.value = UsuarioUiState.Success("Usuario actualizado exitosamente")
+                    }
                     is ValidationResult.Error -> {
                         _uiState.value = UsuarioUiState.Error(result.message)
                     }
@@ -153,6 +161,10 @@ class VMUsuario(
                 
                 when (result) {
                     is ValidationResult.Success -> {
+                        recargar()
+                        _uiState.value = UsuarioUiState.Success("Usuario eliminado exitosamente")
+                    }
+                    is ValidationResult.SuccessWithData<*> -> {
                         recargar()
                         _uiState.value = UsuarioUiState.Success("Usuario eliminado exitosamente")
                     }

@@ -75,6 +75,10 @@ class VMHorario(
                         recargar()
                         _uiState.value = HorarioUiState.Success("Horario agregado exitosamente")
                     }
+                    is ValidationResult.SuccessWithData<*> -> {
+                        recargar()
+                        _uiState.value = HorarioUiState.Success("Horario agregado exitosamente")
+                    }
                     is ValidationResult.Error -> {
                         _uiState.value = HorarioUiState.Error(result.message)
                     }
@@ -96,6 +100,10 @@ class VMHorario(
                 
                 when (result) {
                     is ValidationResult.Success -> {
+                        recargar()
+                        _uiState.value = HorarioUiState.Success("Horario eliminado exitosamente")
+                    }
+                    is ValidationResult.SuccessWithData<*> -> {
                         recargar()
                         _uiState.value = HorarioUiState.Success("Horario eliminado exitosamente")
                     }
