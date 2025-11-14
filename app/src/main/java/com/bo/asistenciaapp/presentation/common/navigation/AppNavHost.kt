@@ -17,6 +17,7 @@ import com.bo.asistenciaapp.presentation.admin.GestionarUsuariosScreen
 import com.bo.asistenciaapp.presentation.alumno.AlumnoHomeScreen
 import com.bo.asistenciaapp.presentation.alumno.GestionarAsistencia
 import com.bo.asistenciaapp.presentation.alumno.GestionarInscripciones
+import com.bo.asistenciaapp.presentation.alumno.VerBoletaScreen
 import com.bo.asistenciaapp.presentation.docente.ConfigurarHorariosScreen
 import com.bo.asistenciaapp.presentation.docente.DocenteHomeScreen
 import com.bo.asistenciaapp.presentation.docente.VerEstudiantesGrupoScreen
@@ -233,7 +234,26 @@ private fun AlumnoRoutes(
             },
             onGestionarInscripciones = { 
                 navController.navigate(NavRoutes.GestionarInscripciones) 
+            },
+            onVerBoleta = {
+                navController.navigate(NavRoutes.VerBoleta)
             }
+        )
+    }
+    
+    builder.composable(NavRoutes.GestionarInscripciones) {
+        GestionarInscripciones(
+            alumnoId = userId,
+            semestreActual = 2,
+            gestionActual = 2025,
+            onBack = { navController.popBackStack() }
+        )
+    }
+    
+    builder.composable(NavRoutes.VerBoleta) {
+        VerBoletaScreen(
+            alumnoId = userId,
+            onBack = { navController.popBackStack() }
         )
     }
     
@@ -337,6 +357,8 @@ private object NavRoutes {
     
     // Alumno
     const val AlumnoHome = "alumnoHome"
+    const val GestionarInscripciones = "gestionarInscripciones"
+    const val VerBoleta = "verBoleta"
     const val GestionarAsistencias = "gestionarAsistencias"
 }
 

@@ -17,6 +17,8 @@ import androidx.compose.ui.unit.dp
 import com.bo.asistenciaapp.data.local.AppDatabase
 import com.bo.asistenciaapp.data.local.UserSession
 import com.bo.asistenciaapp.data.repository.AsistenciaRepository
+import com.bo.asistenciaapp.data.repository.UsuarioRepository
+import com.bo.asistenciaapp.domain.model.Usuario
 import com.bo.asistenciaapp.domain.usecase.ExportarAsistenciaCU
 import com.bo.asistenciaapp.presentation.common.HomeLayout
 
@@ -50,6 +52,15 @@ fun DocenteHomeScreen(
     // Obtener sesión del usuario para el ID del docente
     val userSession = remember { UserSession(context) }
     val idDocente = userSession.getUserId()
+    val usuarioRepository = remember { UsuarioRepository(db) }
+    
+    var usuario by remember { mutableStateOf<Usuario?>(null) }
+    
+    LaunchedEffect(idDocente) {
+        if (idDocente != -1) {
+            usuario = usuarioRepository.obtenerPorId(idDocente)
+        }
+    }
     
     // Estado para controlar el diálogo de exportación
     var mostrarDialogoExportar by remember { mutableStateOf(false) }
@@ -57,6 +68,7 @@ fun DocenteHomeScreen(
     HomeLayout { paddingValues ->
         DocenteHomeContent(
             paddingValues = paddingValues,
+            usuario = usuario,
             onLogout = onLogout,
             onVerGrupos = onVerGrupos,
             onExportarAsistencias = {
@@ -107,6 +119,7 @@ fun DocenteHomeScreen(
 @Composable
 private fun DocenteHomeContent(
     paddingValues: PaddingValues,
+    usuario: Usuario?,
     onLogout: () -> Unit,
     onVerGrupos: () -> Unit,
     onExportarAsistencias: () -> Unit
@@ -120,7 +133,7 @@ private fun DocenteHomeContent(
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(20.dp)
     ) {
-        DocenteHomeHeader()
+        DocenteHomeHeader(usuario = usuario)
         DocenteHomeMenu(
             onVerGrupos = onVerGrupos,
             onExportarAsistencias = onExportarAsistencias,
@@ -176,10 +189,10 @@ private fun DocenteHomeMenu(
 /**
  * Header de la pantalla home del docente.
  * 
- * Molécula que muestra el título y mensaje de bienvenida.
+ * Molécula que muestra el título, datos del usuario y mensaje de bienvenida.
  */
 @Composable
-private fun DocenteHomeHeader() {
+private fun DocenteHomeHeader(usuario: Usuario?) {
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(8.dp)
@@ -210,12 +223,28 @@ private fun DocenteHomeHeader() {
             textAlign = TextAlign.Center
         )
         
-        Text(
-            text = "Bienvenido",
-            style = MaterialTheme.typography.bodyLarge,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            textAlign = TextAlign.Center
-        )
+        if (usuario != null) {
+            Text(
+                text = "${usuario.nombres} ${usuario.apellidos}",
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.SemiBold,
+                color = MaterialTheme.colorScheme.onSurface,
+                textAlign = TextAlign.Center
+            )
+            Text(
+                text = "Registro: ${usuario.registro}",
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                textAlign = TextAlign.Center
+            )
+        } else {
+            Text(
+                text = "Bienvenido",
+                style = MaterialTheme.typography.bodyLarge,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                textAlign = TextAlign.Center
+            )
+        }
     }
 }
 

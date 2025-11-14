@@ -45,6 +45,16 @@ class UsuarioRepository(private val database: AppDatabase) {
     }
     
     /**
+     * Obtiene un usuario por su ID.
+     * 
+     * @param id ID del usuario
+     * @return Usuario si existe, null en caso contrario
+     */
+    fun obtenerPorId(id: Int): Usuario? {
+        return database.usuarioDao.obtenerPorId(id)
+    }
+    
+    /**
      * Agrega un nuevo usuario al sistema.
      * 
      * @param nombres Nombres del usuario

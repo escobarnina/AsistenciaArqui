@@ -5,19 +5,25 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
-import androidx.compose.runtime.Composable
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavHostController
+import com.bo.asistenciaapp.data.local.AppDatabase
+import com.bo.asistenciaapp.data.local.UserSession
+import com.bo.asistenciaapp.data.repository.UsuarioRepository
+import com.bo.asistenciaapp.domain.model.Usuario
 import com.bo.asistenciaapp.presentation.common.HomeLayout
 
 /**
  * Pantalla principal del estudiante.
  * 
  * Muestra las opciones principales disponibles para el alumno:
+ * - Ver boleta de inscripción
  * - Gestionar inscripciones
  * - Marcar asistencia
  * - Cerrar sesión
@@ -30,19 +36,37 @@ import com.bo.asistenciaapp.presentation.common.HomeLayout
  * @param navController Controlador de navegación
  * @param onLogout Callback cuando se presiona cerrar sesión
  * @param onGestionarInscripciones Callback cuando se presiona gestionar inscripciones
+ * @param onVerBoleta Callback cuando se presiona ver boleta
  */
 @Composable
 fun AlumnoHomeScreen(
     navController: NavHostController,
     onLogout: () -> Unit,
     onGestionarInscripciones: () -> Unit,
+    onVerBoleta: () -> Unit,
 ) {
+    val context = LocalContext.current
+    val userSession = remember { UserSession(context) }
+    val database = remember { AppDatabase.getInstance(context) }
+    val usuarioRepository = remember { UsuarioRepository(database) }
+    
+    val userId = userSession.getUserId()
+    var usuario by remember { mutableStateOf<Usuario?>(null) }
+    
+    LaunchedEffect(userId) {
+        if (userId != -1) {
+            usuario = usuarioRepository.obtenerPorId(userId)
+        }
+    }
+    
     HomeLayout { paddingValues ->
         AlumnoHomeContent(
             paddingValues = paddingValues,
             navController = navController,
+            usuario = usuario,
             onLogout = onLogout,
-            onGestionarInscripciones = onGestionarInscripciones
+            onGestionarInscripciones = onGestionarInscripciones,
+            onVerBoleta = onVerBoleta
         )
     }
 }
@@ -60,8 +84,10 @@ fun AlumnoHomeScreen(
 private fun AlumnoHomeContent(
     paddingValues: PaddingValues,
     navController: NavHostController,
+    usuario: Usuario?,
     onLogout: () -> Unit,
-    onGestionarInscripciones: () -> Unit
+    onGestionarInscripciones: () -> Unit,
+    onVerBoleta: () -> Unit
 ) {
     Column(
         modifier = Modifier
@@ -71,11 +97,12 @@ private fun AlumnoHomeContent(
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(24.dp)
     ) {
-        AlumnoHomeHeader()
+        AlumnoHomeHeader(usuario = usuario)
         Spacer(modifier = Modifier.height(8.dp))
         AlumnoHomeMenu(
             navController = navController,
             onGestionarInscripciones = onGestionarInscripciones,
+            onVerBoleta = onVerBoleta,
             onLogout = onLogout
         )
     }
@@ -90,12 +117,20 @@ private fun AlumnoHomeContent(
 private fun AlumnoHomeMenu(
     navController: NavHostController,
     onGestionarInscripciones: () -> Unit,
+    onVerBoleta: () -> Unit,
     onLogout: () -> Unit
 ) {
     Column(
         modifier = Modifier.fillMaxWidth(),
         verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
+        AlumnoActionCard(
+            title = "Ver Boleta",
+            description = "Consulta tus materias inscritas",
+            icon = Icons.Default.Description,
+            onClick = onVerBoleta
+        )
+        
         AlumnoActionCard(
             title = "Gestionar Inscripciones",
             description = "Inscríbete en materias y grupos",
@@ -127,10 +162,10 @@ private fun AlumnoHomeMenu(
 /**
  * Header de la pantalla home del estudiante.
  * 
- * Molécula que muestra el título y mensaje de bienvenida.
+ * Molécula que muestra el título, datos del usuario y mensaje de bienvenida.
  */
 @Composable
-private fun AlumnoHomeHeader() {
+private fun AlumnoHomeHeader(usuario: Usuario?) {
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(8.dp)
@@ -161,12 +196,28 @@ private fun AlumnoHomeHeader() {
             textAlign = TextAlign.Center
         )
         
-        Text(
-            text = "Bienvenido",
-            style = MaterialTheme.typography.bodyLarge,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            textAlign = TextAlign.Center
-        )
+        if (usuario != null) {
+            Text(
+                text = "${usuario.nombres} ${usuario.apellidos}",
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.SemiBold,
+                color = MaterialTheme.colorScheme.onSurface,
+                textAlign = TextAlign.Center
+            )
+            Text(
+                text = "Registro: ${usuario.registro}",
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                textAlign = TextAlign.Center
+            )
+        } else {
+            Text(
+                text = "Bienvenido",
+                style = MaterialTheme.typography.bodyLarge,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                textAlign = TextAlign.Center
+            )
+        }
     }
 }
 

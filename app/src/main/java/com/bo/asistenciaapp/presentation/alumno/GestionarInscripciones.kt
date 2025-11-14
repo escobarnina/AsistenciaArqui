@@ -3,7 +3,9 @@ package com.bo.asistenciaapp.presentation.alumno
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
@@ -17,10 +19,10 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.bo.asistenciaapp.data.local.AppDatabase
 import com.bo.asistenciaapp.data.repository.GrupoRepository
 import com.bo.asistenciaapp.data.repository.InscripcionRepository
-import com.bo.asistenciaapp.domain.model.Boleta
 import com.bo.asistenciaapp.domain.model.Grupo
 import com.bo.asistenciaapp.domain.usecase.GrupoCU
 import com.bo.asistenciaapp.domain.usecase.InscripcionCU
+import com.bo.asistenciaapp.domain.viewmodel.GrupoConHorariosInscripcion
 import com.bo.asistenciaapp.domain.viewmodel.InscripcionUiState
 import com.bo.asistenciaapp.domain.viewmodel.VMInscripcion
 import com.bo.asistenciaapp.presentation.common.ToastUtils
@@ -34,12 +36,13 @@ import java.util.*
  * 
  * Permite al estudiante:
  * - Inscribirse en grupos disponibles
- * - Ver su boleta de inscripción con horarios
+ * 
+ * Nota: Para ver la boleta de inscripción, usar la pantalla VerBoletaScreen.
  * 
  * Arquitectura: Componentes organizados siguiendo principios de Atomic Design
  * - Atoms: Elementos básicos (Iconos, Textos)
- * - Molecules: Componentes compuestos (Cards de grupo, Items de boleta)
- * - Organisms: Secciones completas (Lista de grupos, Lista de boleta)
+ * - Molecules: Componentes compuestos (Cards de grupo)
+ * - Organisms: Secciones completas (Lista de grupos disponibles)
  * 
  * @param alumnoId ID del estudiante
  * @param semestreActual Semestre actual
@@ -59,16 +62,16 @@ fun GestionarInscripciones(
     val database = remember { AppDatabase.getInstance(context) }
     val inscripcionRepository = remember { InscripcionRepository(database) }
     val grupoRepository = remember { GrupoRepository(database) }
+    val horarioRepository = remember { com.bo.asistenciaapp.data.repository.HorarioRepository(database) }
     val inscripcionCU = remember { InscripcionCU(inscripcionRepository) }
     val grupoCU = remember { GrupoCU(grupoRepository) }
     
     // ViewModel
     val viewModel: VMInscripcion = viewModel {
-        VMInscripcion(inscripcionCU, grupoCU, alumnoId)
+        VMInscripcion(inscripcionCU, grupoCU, alumnoId, horarioRepository)
     }
     
-    val grupos by viewModel.grupos.collectAsState()
-    val boletas by viewModel.boletas.collectAsState()
+    val gruposDisponibles by viewModel.gruposDisponibles.collectAsState()
     val uiState by viewModel.uiState.collectAsState()
     
     // Manejar estados del ViewModel
@@ -93,8 +96,7 @@ fun GestionarInscripciones(
     ) { paddingValues ->
         GestionarInscripcionesContent(
             paddingValues = paddingValues,
-            grupos = grupos,
-            boletas = boletas,
+            gruposDisponibles = gruposDisponibles,
             uiState = uiState,
             semestreActual = semestreActual,
             gestionActual = gestionActual,
@@ -113,43 +115,44 @@ fun GestionarInscripciones(
 /**
  * Contenido principal de la pantalla de gestión de inscripciones.
  * 
- * Organismo que combina las listas de grupos y boleta.
+ * Organismo que muestra:
+ * - Grupos disponibles para inscribirse
  */
 @Composable
 private fun GestionarInscripcionesContent(
     paddingValues: PaddingValues,
-    grupos: List<Grupo>,
-    boletas: List<Boleta>,
+    gruposDisponibles: List<GrupoConHorariosInscripcion>,
     uiState: InscripcionUiState,
     semestreActual: Int,
     gestionActual: Int,
     onInscribirse: (Int) -> Unit
 ) {
+    val scrollState = rememberScrollState()
+    
     Column(
         modifier = Modifier
             .fillMaxSize()
             .padding(paddingValues)
+            .verticalScroll(scrollState)
             .padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(24.dp)
     ) {
-        InscripcionesGruposSection(
-            grupos = grupos,
+        InscripcionesGruposDisponiblesSection(
+            grupos = gruposDisponibles,
             uiState = uiState,
             onInscribirse = onInscribirse
         )
-        
-        InscripcionesBoletaSection(boletas = boletas)
     }
 }
 
 /**
  * Sección de grupos disponibles para inscripción.
  * 
- * Organismo que muestra la lista de grupos con sus acciones.
+ * Organismo que muestra la lista de grupos disponibles con información de cupos y horarios.
  */
 @Composable
-private fun InscripcionesGruposSection(
-    grupos: List<Grupo>,
+private fun InscripcionesGruposDisponiblesSection(
+    grupos: List<GrupoConHorariosInscripcion>,
     uiState: InscripcionUiState,
     onInscribirse: (Int) -> Unit
 ) {
@@ -162,9 +165,9 @@ private fun InscripcionesGruposSection(
             verticalAlignment = Alignment.CenterVertically
         ) {
             Icon(
-                imageVector = Icons.Default.School,
+                imageVector = Icons.Default.AddCircle,
                 contentDescription = null,
-                tint = MaterialTheme.colorScheme.primary,
+                tint = MaterialTheme.colorScheme.tertiary,
                 modifier = Modifier.size(24.dp)
             )
             Text(
@@ -181,63 +184,15 @@ private fun InscripcionesGruposSection(
                 message = "No hay grupos disponibles para inscripción"
             )
         } else {
-            LazyColumn(
+            Column(
                 verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                items(grupos) { grupo ->
-                    InscripcionesGrupoCard(
-                        grupo = grupo,
+                grupos.forEach { grupoConHorarios ->
+                    InscripcionesGrupoDisponibleCard(
+                        grupoConHorarios = grupoConHorarios,
                         isLoading = uiState is InscripcionUiState.Loading,
-                        onInscribirse = { onInscribirse(grupo.id) }
+                        onInscribirse = { onInscribirse(grupoConHorarios.grupo.id) }
                     )
-                }
-            }
-        }
-    }
-}
-
-/**
- * Sección de boleta de inscripción.
- * 
- * Organismo que muestra la lista de materias inscritas con horarios.
- */
-@Composable
-private fun InscripcionesBoletaSection(
-    boletas: List<Boleta>
-) {
-    Column(
-        verticalArrangement = Arrangement.spacedBy(12.dp)
-    ) {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Icon(
-                imageVector = Icons.Default.Assignment,
-                contentDescription = null,
-                tint = MaterialTheme.colorScheme.primary,
-                modifier = Modifier.size(24.dp)
-            )
-            Text(
-                text = "Mi Boleta de Inscripción",
-                style = MaterialTheme.typography.titleLarge,
-                fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.onSurface
-            )
-        }
-        
-        if (boletas.isEmpty()) {
-            InscripcionesEmptyState(
-                icon = Icons.Default.Description,
-                message = "No tienes materias inscritas"
-            )
-        } else {
-            LazyColumn(
-                verticalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                items(boletas) { boleta ->
-                    InscripcionesBoletaCard(boleta = boleta)
                 }
             }
         }
@@ -249,21 +204,25 @@ private fun InscripcionesBoletaSection(
 // ============================================================================
 
 /**
- * Card de grupo para inscripción.
+ * Card de grupo disponible para inscripción.
  * 
- * Molécula que muestra la información del grupo y botón de acción.
+ * Molécula que muestra la información del grupo con cupos disponibles y horarios.
  */
 @Composable
-private fun InscripcionesGrupoCard(
-    grupo: Grupo,
+private fun InscripcionesGrupoDisponibleCard(
+    grupoConHorarios: GrupoConHorariosInscripcion,
     isLoading: Boolean,
     onInscribirse: () -> Unit
 ) {
+    val grupo = grupoConHorarios.grupo
+    val cuposDisponibles = grupo.capacidad - grupo.nroInscritos
+    val tieneCupo = cuposDisponibles > 0
+    
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceVariant
+            containerColor = MaterialTheme.colorScheme.surface
         ),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
     ) {
@@ -281,7 +240,7 @@ private fun InscripcionesGrupoCard(
                 Surface(
                     modifier = Modifier.size(48.dp),
                     shape = RoundedCornerShape(12.dp),
-                    color = MaterialTheme.colorScheme.primaryContainer
+                    color = MaterialTheme.colorScheme.tertiaryContainer
                 ) {
                     Box(
                         contentAlignment = Alignment.Center,
@@ -291,7 +250,7 @@ private fun InscripcionesGrupoCard(
                             imageVector = Icons.Default.Book,
                             contentDescription = null,
                             modifier = Modifier.size(24.dp),
-                            tint = MaterialTheme.colorScheme.primary
+                            tint = MaterialTheme.colorScheme.onTertiaryContainer
                         )
                     }
                 }
@@ -304,12 +263,12 @@ private fun InscripcionesGrupoCard(
                         text = grupo.materiaNombre,
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.SemiBold,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                        color = MaterialTheme.colorScheme.onSurface
                     )
                     Text(
                         text = "Grupo ${grupo.grupo}",
                         style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
+                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
                     )
                     Row(
                         horizontalArrangement = Arrangement.spacedBy(4.dp),
@@ -319,22 +278,90 @@ private fun InscripcionesGrupoCard(
                             imageVector = Icons.Default.Person,
                             contentDescription = null,
                             modifier = Modifier.size(14.dp),
-                            tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
+                            tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
                         )
                         Text(
                             text = grupo.docenteNombre,
                             style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
+                            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
                         )
                     }
                 }
             }
             
+            // Información de cupos
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Icon(
+                    imageVector = if (tieneCupo) Icons.Default.Group else Icons.Default.GroupOff,
+                    contentDescription = null,
+                    modifier = Modifier.size(16.dp),
+                    tint = if (tieneCupo) MaterialTheme.colorScheme.tertiary else MaterialTheme.colorScheme.error
+                )
+                Text(
+                    text = if (tieneCupo) {
+                        "$cuposDisponibles cupos disponibles (${grupo.nroInscritos}/${grupo.capacidad} inscritos)"
+                    } else {
+                        "Grupo lleno (${grupo.capacidad}/${grupo.capacidad} inscritos)"
+                    },
+                    style = MaterialTheme.typography.bodySmall,
+                    fontWeight = if (tieneCupo) FontWeight.Normal else FontWeight.Medium,
+                    color = if (tieneCupo) MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f) else MaterialTheme.colorScheme.error
+                )
+            }
+            
+            // Horarios
+            if (grupoConHorarios.horarios.isNotEmpty()) {
+                Column(
+                    verticalArrangement = Arrangement.spacedBy(6.dp)
+                ) {
+                    Text(
+                        text = "Horarios:",
+                        style = MaterialTheme.typography.labelMedium,
+                        fontWeight = FontWeight.Medium,
+                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.8f)
+                    )
+                    grupoConHorarios.horarios.forEach { horario ->
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(8.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Schedule,
+                                contentDescription = null,
+                                modifier = Modifier.size(16.dp),
+                                tint = MaterialTheme.colorScheme.tertiary
+                            )
+                            Text(
+                                text = "${horario.dia}: ${horario.horaInicio} - ${horario.horaFin}",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
+                            )
+                        }
+                    }
+                }
+            } else {
+                Text(
+                    text = "Sin horarios asignados",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f),
+                    fontStyle = androidx.compose.ui.text.font.FontStyle.Italic
+                )
+            }
+            
             Button(
                 onClick = onInscribirse,
-                enabled = !isLoading,
+                enabled = !isLoading && tieneCupo,
                 modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(12.dp)
+                shape = RoundedCornerShape(12.dp),
+                colors = ButtonDefaults.buttonColors(
+                    disabledContainerColor = MaterialTheme.colorScheme.surfaceVariant,
+                    disabledContentColor = MaterialTheme.colorScheme.onSurfaceVariant
+                )
             ) {
                 if (isLoading) {
                     CircularProgressIndicator(
@@ -355,7 +382,7 @@ private fun InscripcionesGrupoCard(
                     )
                     Spacer(modifier = Modifier.width(8.dp))
                     Text(
-                        text = "Inscribirse",
+                        text = if (tieneCupo) "Inscribirse" else "Sin cupos",
                         style = MaterialTheme.typography.labelMedium
                     )
                 }
@@ -364,101 +391,6 @@ private fun InscripcionesGrupoCard(
     }
 }
 
-/**
- * Card de boleta de inscripción.
- * 
- * Molécula que muestra la información de una materia inscrita con horario.
- */
-@Composable
-private fun InscripcionesBoletaCard(
-    boleta: Boleta
-) {
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(12.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surface
-        ),
-        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
-    ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(16.dp),
-            horizontalArrangement = Arrangement.spacedBy(12.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Surface(
-                modifier = Modifier.size(40.dp),
-                shape = RoundedCornerShape(10.dp),
-                color = MaterialTheme.colorScheme.secondaryContainer
-            ) {
-                Box(
-                    contentAlignment = Alignment.Center,
-                    modifier = Modifier.fillMaxSize()
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.Schedule,
-                        contentDescription = null,
-                        modifier = Modifier.size(20.dp),
-                        tint = MaterialTheme.colorScheme.onSecondaryContainer
-                    )
-                }
-            }
-            
-            Column(
-                modifier = Modifier.weight(1f),
-                verticalArrangement = Arrangement.spacedBy(4.dp)
-            ) {
-                Text(
-                    text = "${boleta.materiaNombre} - Grupo ${boleta.grupo}",
-                    style = MaterialTheme.typography.bodyLarge,
-                    fontWeight = FontWeight.Medium,
-                    color = MaterialTheme.colorScheme.onSurface
-                )
-                Row(
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Row(
-                        horizontalArrangement = Arrangement.spacedBy(4.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.CalendarToday,
-                            contentDescription = null,
-                            modifier = Modifier.size(14.dp),
-                            tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
-                        )
-                        Text(
-                            text = boleta.dia,
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
-                        )
-                    }
-                    Text(
-                        text = "•",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.4f)
-                    )
-                    Text(
-                        text = boleta.horario,
-                        style = MaterialTheme.typography.bodySmall,
-                        fontWeight = FontWeight.Medium,
-                        color = MaterialTheme.colorScheme.primary
-                    )
-                }
-            }
-            
-            Icon(
-                imageVector = Icons.Default.CheckCircle,
-                contentDescription = null,
-                tint = MaterialTheme.colorScheme.primary,
-                modifier = Modifier.size(24.dp)
-            )
-        }
-    }
-}
 
 /**
  * Estado vacío para listas.
@@ -474,7 +406,7 @@ private fun InscripcionesEmptyState(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
+            containerColor = MaterialTheme.colorScheme.surface
         )
     ) {
         Column(
@@ -488,12 +420,12 @@ private fun InscripcionesEmptyState(
                 imageVector = icon,
                 contentDescription = null,
                 modifier = Modifier.size(48.dp),
-                tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
+                tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
             )
             Text(
                 text = message,
                 style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
+                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
             )
         }
     }

@@ -84,6 +84,29 @@ class UsuarioDao(private val database: SQLiteDatabase) {
     }
     
     /**
+     * Obtiene un usuario por su ID.
+     */
+    fun obtenerPorId(id: Int): Usuario? {
+        database.rawQuery(
+            "SELECT id, nombres, apellidos, registro, rol, username FROM usuarios WHERE id=?",
+            arrayOf(id.toString())
+        ).use { c ->
+            return if (c.moveToFirst()) {
+                Usuario(
+                    id = c.getInt(0),
+                    nombres = c.getString(1),
+                    apellidos = c.getString(2),
+                    registro = c.getString(3),
+                    rol = c.getString(4),
+                    username = c.getString(5),
+                )
+            } else {
+                null
+            }
+        }
+    }
+    
+    /**
      * Inserta un nuevo usuario.
      */
     fun insertar(nombres: String, apellidos: String, registro: String, rol: String, username: String, contrasena: String) {
