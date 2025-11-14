@@ -184,10 +184,10 @@ private fun InscripcionesGruposDisponiblesSection(
                 message = "No hay grupos disponibles para inscripción"
             )
         } else {
-            Column(
+            LazyColumn(
                 verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                grupos.forEach { grupoConHorarios ->
+                items(grupos) { grupoConHorarios ->
                     InscripcionesGrupoDisponibleCard(
                         grupoConHorarios = grupoConHorarios,
                         isLoading = uiState is InscripcionUiState.Loading,

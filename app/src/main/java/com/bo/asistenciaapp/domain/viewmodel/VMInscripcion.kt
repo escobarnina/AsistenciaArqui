@@ -2,8 +2,10 @@ package com.bo.asistenciaapp.domain.viewmodel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.bo.asistenciaapp.data.repository.HorarioRepository
 import com.bo.asistenciaapp.domain.model.Boleta
 import com.bo.asistenciaapp.domain.model.Grupo
+import com.bo.asistenciaapp.domain.model.Horario
 import com.bo.asistenciaapp.domain.usecase.GrupoCU
 import com.bo.asistenciaapp.domain.usecase.InscripcionCU
 import com.bo.asistenciaapp.domain.utils.ValidationResult
@@ -23,6 +25,16 @@ sealed class InscripcionUiState {
 }
 
 /**
+ * Data class que combina un grupo con sus horarios.
+ * 
+ * Utilizado para mostrar información completa de grupos en las pantallas de inscripción.
+ */
+data class GrupoConHorariosInscripcion(
+    val grupo: Grupo,
+    val horarios: List<Horario>
+)
+
+/**
  * ViewModel para la gestión de inscripciones.
  * 
  * Maneja la lógica de negocio relacionada con inscripciones y el estado de la UI.
@@ -30,7 +42,8 @@ sealed class InscripcionUiState {
 class VMInscripcion(
     private val inscripcionCU: InscripcionCU,
     private val grupoCU: GrupoCU,
-    private val alumnoId: Int
+    private val alumnoId: Int,
+    private val horarioRepository: HorarioRepository
 ) : ViewModel() {
     
     private val _boletas = MutableStateFlow<List<Boleta>>(emptyList())
@@ -38,6 +51,12 @@ class VMInscripcion(
     
     private val _grupos = MutableStateFlow<List<Grupo>>(emptyList())
     val grupos: StateFlow<List<Grupo>> = _grupos.asStateFlow()
+    
+    private val _gruposDisponibles = MutableStateFlow<List<GrupoConHorariosInscripcion>>(emptyList())
+    val gruposDisponibles: StateFlow<List<GrupoConHorariosInscripcion>> = _gruposDisponibles.asStateFlow()
+    
+    private val _gruposInscritos = MutableStateFlow<List<GrupoConHorariosInscripcion>>(emptyList())
+    val gruposInscritos: StateFlow<List<GrupoConHorariosInscripcion>> = _gruposInscritos.asStateFlow()
     
     private val _uiState = MutableStateFlow<InscripcionUiState>(InscripcionUiState.Idle)
     val uiState: StateFlow<InscripcionUiState> = _uiState.asStateFlow()
@@ -53,8 +72,34 @@ class VMInscripcion(
         viewModelScope.launch {
             _uiState.value = InscripcionUiState.Loading
             try {
-                _boletas.value = inscripcionCU.obtenerInscripciones(alumnoId)
-                _grupos.value = grupoCU.obtenerGrupos()
+                val boletasList = inscripcionCU.obtenerInscripciones(alumnoId)
+                val gruposList = grupoCU.obtenerGrupos()
+                
+                _boletas.value = boletasList
+                _grupos.value = gruposList
+                
+                // Obtener IDs de grupos inscritos
+                val gruposInscritosIds = boletasList.map { it.grupoId }.toSet()
+                
+                // Separar grupos disponibles e inscritos
+                val gruposDisponiblesList = gruposList.filter { it.id !in gruposInscritosIds }
+                val gruposInscritosList = gruposList.filter { it.id in gruposInscritosIds }
+                
+                // Combinar grupos con sus horarios
+                _gruposDisponibles.value = gruposDisponiblesList.map { grupo ->
+                    GrupoConHorariosInscripcion(
+                        grupo = grupo,
+                        horarios = horarioRepository.obtenerPorGrupo(grupo.id)
+                    )
+                }
+                
+                _gruposInscritos.value = gruposInscritosList.map { grupo ->
+                    GrupoConHorariosInscripcion(
+                        grupo = grupo,
+                        horarios = horarioRepository.obtenerPorGrupo(grupo.id)
+                    )
+                }
+                
                 _uiState.value = InscripcionUiState.Success()
             } catch (e: Exception) {
                 _uiState.value = InscripcionUiState.Error("Error al cargar datos: ${e.message}")

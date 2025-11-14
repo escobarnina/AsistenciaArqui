@@ -33,7 +33,7 @@ import com.bo.asistenciaapp.data.local.dao.UsuarioDao
  * - NO usar directamente desde casos de uso o ViewModels
  */
 class AppDatabase private constructor(context: Context) :
-    SQLiteOpenHelper(context.applicationContext, "asistenciadb.db", null, 18) {  // ⭐ Versión incrementada para nueva columna tipo_estrategia
+    SQLiteOpenHelper(context.applicationContext, "asistenciadb.db", null, 19) {  // ⭐ Versión incrementada para actualización de esquema
 
     companion object {
         @Volatile
