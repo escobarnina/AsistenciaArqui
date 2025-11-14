@@ -264,7 +264,7 @@ private fun VerGrupoInfoHeader(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.primaryContainer
+            containerColor = MaterialTheme.colorScheme.primary
         ),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
     ) {
@@ -278,7 +278,7 @@ private fun VerGrupoInfoHeader(
             Surface(
                 modifier = Modifier.size(48.dp),
                 shape = RoundedCornerShape(12.dp),
-                color = MaterialTheme.colorScheme.primary
+                color = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.2f)
             ) {
                 Box(
                     contentAlignment = Alignment.Center,
@@ -301,7 +301,7 @@ private fun VerGrupoInfoHeader(
                     text = nombreGrupo,
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.SemiBold,
-                    color = MaterialTheme.colorScheme.onPrimaryContainer
+                    color = MaterialTheme.colorScheme.onPrimary
                 )
                 Row(
                     horizontalArrangement = Arrangement.spacedBy(4.dp),
@@ -311,12 +311,12 @@ private fun VerGrupoInfoHeader(
                         imageVector = Icons.Default.People,
                         contentDescription = null,
                         modifier = Modifier.size(14.dp),
-                        tint = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.7f)
+                        tint = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.9f)
                     )
                     Text(
                         text = "$totalEstudiantes estudiante${if (totalEstudiantes != 1) "s" else ""}",
                         style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.7f)
+                        color = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.9f)
                     )
                 }
             }

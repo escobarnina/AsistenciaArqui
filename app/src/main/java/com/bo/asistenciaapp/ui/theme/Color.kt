@@ -41,7 +41,9 @@ val Neutral40 = Color(0xFF6B7280)  // Neutral para tema claro
 
 // Colores de superficie
 val SurfaceDark = Color(0xFF1E293B)    // Superficie para tema oscuro
-val SurfaceLight = Color(0xFFFFFFFF)   // Superficie para tema claro
+val SurfaceLight = Color(0xFFFEFEFE)   // Superficie para tema claro (blanco ligeramente cálido)
+val SurfaceVariantLight = Color(0xFFF1F5F9)  // Variante de superficie para tema claro (gris muy claro, más claro que background)
+val SurfaceVariantDark = Color(0xFF334155)   // Variante de superficie para tema oscuro (gris azulado más claro)
 
 // Colores de fondo
 val BackgroundDark = Color(0xFF0F172A)  // Fondo para tema oscuro

@@ -47,8 +47,8 @@ private val DarkColorScheme = darkColorScheme(
     
     surface = SurfaceDark,
     onSurface = OnSurfaceDark,
-    surfaceVariant = Neutral80.copy(alpha = 0.1f),
-    onSurfaceVariant = Neutral80,
+    surfaceVariant = SurfaceVariantDark,
+    onSurfaceVariant = OnSurfaceDark,
     
     outline = Neutral80.copy(alpha = 0.5f),
     outlineVariant = Neutral80.copy(alpha = 0.3f),
@@ -91,8 +91,8 @@ private val LightColorScheme = lightColorScheme(
     
     surface = SurfaceLight,
     onSurface = OnSurfaceLight,
-    surfaceVariant = Neutral40.copy(alpha = 0.1f),
-    onSurfaceVariant = Neutral40,
+    surfaceVariant = SurfaceVariantLight,
+    onSurfaceVariant = OnSurfaceLight,
     
     outline = Neutral40.copy(alpha = 0.5f),
     outlineVariant = Neutral40.copy(alpha = 0.3f),
@@ -111,12 +111,13 @@ private val LightColorScheme = lightColorScheme(
  * 
  * Características:
  * - Soporte para tema claro y oscuro
- * - Soporte para colores dinámicos en Android 12+ (Material You)
- * - Paleta de colores académica profesional
+ * - Paleta de colores académica profesional personalizada
  * - Tipografía completa según Material Design 3
+ * - Colores personalizados consistentes en todas las versiones de Android
  * 
  * @param darkTheme Si es true, aplica el tema oscuro. Por defecto sigue la configuración del sistema.
  * @param dynamicColor Si es true y el dispositivo lo soporta (Android 12+), usa colores dinámicos del sistema.
+ *                     Por defecto es false para usar siempre los colores personalizados de la aplicación.
  * @param content Contenido composable que usará este tema.
  * 
  * Ejemplo de uso:
@@ -129,8 +130,8 @@ private val LightColorScheme = lightColorScheme(
 @Composable
 fun AsistenciaAppTheme(
     darkTheme: Boolean = isSystemInDarkTheme(),
-    // Dynamic color is available on Android 12+
-    dynamicColor: Boolean = true,
+    // Dynamic color deshabilitado por defecto para usar colores personalizados
+    dynamicColor: Boolean = false,
     content: @Composable () -> Unit
 ) {
     val colorScheme = when {
@@ -148,9 +149,15 @@ fun AsistenciaAppTheme(
     if (!view.isInEditMode) {
         SideEffect {
             val window = (view.context as Activity).window
+            // Configurar color de la barra de estado
             window.statusBarColor = colorScheme.primary.toArgb()
+            // Configurar color de la barra de navegación para que coincida con el fondo
+            window.navigationBarColor = colorScheme.background.toArgb()
             val insetsController = WindowCompat.getInsetsController(window, view)
+            // Configurar apariencia de iconos en la barra de estado
             insetsController.isAppearanceLightStatusBars = !darkTheme
+            // Configurar apariencia de iconos en la barra de navegación
+            insetsController.isAppearanceLightNavigationBars = !darkTheme
         }
     }
 
