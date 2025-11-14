@@ -347,7 +347,6 @@ private object NavRoutes {
     const val GestionMaterias = "gestionMaterias"
     const val GestionGrupos = "gestionGrupos"
     const val GestionHorarios = "gestionHorarios"
-    const val GestionarInscripciones = "gestionarInscripciones"
     
     // Docente
     const val DocenteHome = "docenteHome"
@@ -355,7 +354,7 @@ private object NavRoutes {
     const val DocenteEstudiantes = "docenteEstudiantes"
     const val DocenteConfigurarHorarios = "docenteConfigurarHorarios"
     
-    // Alumno
+    // Alumno (también usado por Admin para gestionar inscripciones)
     const val AlumnoHome = "alumnoHome"
     const val GestionarInscripciones = "gestionarInscripciones"
     const val VerBoleta = "verBoleta"
